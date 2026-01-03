@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Stefan Schmidt
+
+cmake_minimum_required(VERSION 3.10)
+project(cryptod)
+
+add_executable(${PROJECT_NAME}
+    src/main.cpp
+    src/crypto_daemon.cpp
+)
+
+
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/../common/include
+)
+
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+        openssl_backend
+        crypto_service
+        keystore
+)
+
+add_subdirectory(crypto_backend/ossl)
+add_subdirectory(crypto_service)
+add_subdirectory(keystore)
+add_subdirectory(test)

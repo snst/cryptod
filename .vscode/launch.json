@@ -1,0 +1,106 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) hmac openssl prov",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/openssl/apps/openssl",
+            "args": ["mac", "-provider", "libcryptod_provider", "-macopt", "hexkey:aa", "-digest", "SHA512", "-in", "input3.txt", "HMAC"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/data",
+            "environment": [ { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/openssl" },
+                             { "name": "OPENSSL_MODULES", "value": "${workspaceFolder}/build/cryptod_ossl_provider" } ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) cryptod",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/crypto_daemon/cryptod",
+            "args": ["-c", "cryptod.ini"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/data",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) keystore",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/keystore_cli/keystore_cli",
+            "args": ["-c", "cryptod.ini", "-a", "-k", "0xaa", "-i", "aes256_2.key"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/data",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "(gdb) test_ossl_backend",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tests/test_ossl_backend",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/data",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+    ]
+}

@@ -1,0 +1,24 @@
+-----BEGIN DUMMY DATA-----
+# Dummy test input for crypto routines
+# Contains mixed content: plaintext, hex, base64, unicode, whitespace, and repeated patterns.
+
+Plaintext: The quick brown fox jumps over the lazy dog.
+Passphrase: correct horse battery staple
+
+Hex sample: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0f27b4d6b6f7b8c9d0e1f
+Base64 sample: VGhpcyBpcyBhIHRlc3QgcmFuZG9tIGJ5dGVzIGZvciB0ZXN0aW5nLg==
+UUID-like: 123e4567-e89b-12d3-a456-426655440000
+
+Multiline:
+Line1: secret1
+Line2: s3cr3t-!@#
+Line3: 00000000000000000000000000000000
+
+Whitespace test:
+    indented line with spaces
+tab\tseparated\tvalues
+
+Repeated pattern (100 chars):
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+-----END DUMMY DATA-----
