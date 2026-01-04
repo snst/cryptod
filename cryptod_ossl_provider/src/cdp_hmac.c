@@ -53,15 +53,23 @@ static int cdp_hmac_init(void *vhmac_ctx, const unsigned char *key,
 {
     LOG_ENTRY("vhmac_ctx=%p", vhmac_ctx);
     rpc_hmac_t *hmac_ctx = (rpc_hmac_t *)vhmac_ctx;
+    int ret = 0;
+
+    if ((key != NULL) && (keylen == sizeof(crypto_key_id_t)))
+    {
+        memcpy(&hmac_ctx->key_id, key, keylen);
+    }
 
     // Even if params is empty, return 1.
     // The digest might have been set previously via set_ctx_params.
     if (params != NULL)
     {
-        return cdp_hmac_set_ctx_params(vhmac_ctx, params);
+        ret = cdp_hmac_set_ctx_params(vhmac_ctx, params);
+        if (ret != 1)
+            return ret;
     }
 
-    int ret = cc_hmac_init(hmac_ctx->rpc, hmac_ctx->key_id, hmac_ctx->hash_alg);
+    ret = cc_hmac_init(hmac_ctx->rpc, hmac_ctx->key_id, hmac_ctx->hash_alg);
 
     return ret;
 }

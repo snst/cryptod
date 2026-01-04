@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Stefan Schmidt
 
+#include <optional>
 #include <capnp/ez-rpc.h>
 #include "crypto.capnp.h"
 #include "crypto_client.h"
@@ -8,7 +9,6 @@
 
 #define ENABLE_LOGGING
 #include "log_macro.h"
-
 
 static ::CryptoService::HashMode backend_hash_mode_to_rpc(crypto_hash_alg_t mode)
 {
@@ -31,16 +31,16 @@ public:
     capnp::EzRpcClient rpcClient;
     kj::WaitScope &waitScope;
     CryptoService::Client service;
-    CryptoService::HmacSession::Client session;
+    std::optional<CryptoService::HmacSession::Client> session;
 
     RPCContext()
         : rpcClient(CRYPTOD_SOCKET_RPC),
           waitScope(rpcClient.getWaitScope()),
-          service(rpcClient.getMain<CryptoService>()),
-          session(nullptr)
+          service(rpcClient.getMain<CryptoService>())
     {
-        service = rpcClient.getMain<CryptoService>();
     }
+
+    ~RPCContext() = default;
 };
 
 extern "C" void *cc_connect()
@@ -95,7 +95,7 @@ extern "C" int cc_hmac_update(void *vrpc, const uint8_t *data, uint32_t size)
     RPCContext *rpc = (RPCContext *)vrpc;
     try
     {
-        auto req = rpc->session.updateRequest();
+        auto req = rpc->session.value().updateRequest();
         req.setData(capnp::Data::Reader(data, size));
 
         // We use .wait() here to make the function synchronous
@@ -113,7 +113,7 @@ extern "C" int cc_hmac_final(void *vrpc, uint8_t *data, uint32_t *len)
     RPCContext *rpc = (RPCContext *)vrpc;
     try
     {
-        auto req = rpc->session.finalRequest();
+        auto req = rpc->session.value().finalRequest();
         auto result = req.send().wait(rpc->waitScope);
 
         // Convert binary to Hex string
@@ -121,9 +121,7 @@ extern "C" int cc_hmac_final(void *vrpc, uint8_t *data, uint32_t *len)
         *len = hmacData.size();
         memcpy(data, hmacData.begin(), hmacData.size());
 
-        // Clear the session capability after finalizing if desired
-        rpc->session = nullptr;
-        rpc->service = nullptr;
+        rpc->session.reset();
 
         return 1;
     }

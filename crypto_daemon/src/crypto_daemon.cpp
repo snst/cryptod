@@ -38,6 +38,7 @@ void CryptoDaemon::init(int argc, char *argv[])
     config.load(configFile);
     keystore.setMasterKey(config.masterKey());
     keystore.loadStore(config.keystoreFile());
+    keystore.setCacheKeys(config.cacheKeys() != 0);
 
     crypto_backend = std::make_unique<OpenSSLBackend>();
 }

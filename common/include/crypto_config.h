@@ -28,6 +28,11 @@ public:
         return reader_.getString("keystore");
     }
 
+    int cacheKeys()
+    {
+        return reader_.getInt("cache_keys", 0);
+    }
+
 private:
     ConfigReader reader_;
 };

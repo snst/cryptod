@@ -9,6 +9,11 @@
 #include <fstream>
 #include <cstring>
 
+KeyStore::KeyStore()
+    : cacheKeys(false)
+{
+}
+
 bool KeyEntry::hasPermission(uint32_t uid, uint32_t gid, KeyPermission perm) const
 {
     uint32_t p = static_cast<uint32_t>(perm);
@@ -27,13 +32,14 @@ bool KeyEntry::hasPermission(uint32_t uid, uint32_t gid, KeyPermission perm) con
     return false;
 }
 
-KeyStore::KeyStore()
-{
-}
-
 void KeyStore::setMasterKey(const SecureVector &masterKey)
 {
     deriveKeys(masterKey);
+}
+
+void KeyStore::setCacheKeys(bool enable)
+{
+    cacheKeys = enable;
 }
 
 void KeyStore::clear()
@@ -263,12 +269,28 @@ Result KeyStore::getKey(uint32_t keyId)
 
     try
     {
-        SecureVector key = decryptKey(it->second.encryptedKey,
-                                      encKey_,
-                                      it->second.iv,
-                                      it->second.metadata,
-                                      it->second.authTag);
-        return Result(ResultStatus::Ok, std::move(key));
+        if (cacheKeys)
+        {
+            if (it->second.decryptedKey.empty())
+            {
+                it->second.decryptedKey = decryptKey(it->second.encryptedKey,
+                                                     encKey_,
+                                                     it->second.iv,
+                                                     it->second.metadata,
+                                                     it->second.authTag);
+            }
+            return Result(ResultStatus::Ok, it->second.decryptedKey);
+        }
+        else
+        {
+
+            SecureVector key = decryptKey(it->second.encryptedKey,
+                                          encKey_,
+                                          it->second.iv,
+                                          it->second.metadata,
+                                          it->second.authTag);
+            return Result(ResultStatus::Ok, std::move(key));
+        }
     }
     catch (...)
     {

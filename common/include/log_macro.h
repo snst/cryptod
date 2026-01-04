@@ -3,7 +3,7 @@
 
 #pragma once
 
-#ifdef ENABLE_LOGGING
+#ifdef ENABLE_LOGGING_
 
 #include <stdio.h>
 

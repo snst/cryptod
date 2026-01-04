@@ -37,6 +37,15 @@ static void dumpHex(const std::string txt, const std::vector<uint8_t> &val)
     std::cout << std::endl;
 }
 
+static void dumpHex(const std::string txt, const void* data, size_t len)
+{
+    std::cout << txt << ": ";
+    for (size_t i=0; i<len; i++)
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)(((uint8_t*)data)[i]);
+
+    std::cout << std::endl;
+}
+
 static std::vector<uint8_t> stringToVector(const std::string &input)
 {
     std::vector<uint8_t> ret;

@@ -67,6 +67,8 @@ struct KeyEntry
     SecureVector encryptedKey;
     SecureVector authTag; // 16 bytes
 
+    SecureVector decryptedKey; // if cached
+
     bool hasPermission(uint32_t uid, uint32_t gid, KeyPermission perm) const;
 };
 
@@ -74,20 +76,17 @@ class KeyStore : public IKeyStore
 {
 public:
     explicit KeyStore();
-
     void setMasterKey(const SecureVector &masterKey);
-
+    void setCacheKeys(bool enable);
     void addKey(uint32_t keyId, KeyType type, uint32_t sizeBits,
                 const SecureVector &rawKey,
                 const std::vector<AclEntry> &uidAcl = {},
                 const std::vector<AclEntry> &gidAcl = {});
-
     Result getKey(uint32_t keyId);
     Result getKeyWithAccessCheck(uint32_t keyId, uint32_t uid, uint32_t gid, KeyPermission perm);
     std::vector<uint32_t> getKeyIdList();
     KeyEntry *getKeyEntry(uint32_t keyId);
     void deleteKey(uint32_t keyId);
-
     bool saveStore(const std::string &path);
     bool loadStore(const std::string &path);
     void clear();
@@ -96,6 +95,7 @@ private:
     std::unordered_map<uint32_t, KeyEntry> entries_;
     SecureVector encKey_;  // AES-GCM key
     SecureVector authKey_; // reserved for future KDF/HMAC use
+    bool cacheKeys;
 
     void deriveKeys(const SecureVector &masterKey);
 
