@@ -4,10 +4,10 @@
 #include <optional>
 #include <capnp/ez-rpc.h>
 #include "crypto.capnp.h"
-#include "crypto_client.h"
+#include "icrypto_client.h"
 #include "crypto_globals.h"
 
-#define ENABLE_LOGGING
+
 #include "log_macro.h"
 
 static ::CryptoService::HashMode backend_hash_mode_to_rpc(crypto_hash_alg_t mode)

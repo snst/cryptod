@@ -45,7 +45,7 @@ static crypto_hash_alg_t rpc_hash_mode_to_backend(::CryptoService::HashMode mode
     }
 }
 
-CapnpCryptoServiceImpl::CapnpCryptoServiceImpl(ICryptoBackend *crypto_backend, IKeyStore *keystore)
+CapnpCryptoServiceImpl::CapnpCryptoServiceImpl(ICryptoBackend &crypto_backend, IKeyStore &keystore)
     : crypto_backend_(crypto_backend), keystore_(keystore)
 {
 }
@@ -54,9 +54,9 @@ kj::Promise<void> CapnpCryptoServiceImpl::initHmac(InitHmacContext context)
 {
     auto params = context.getParams();
 
-    auto key_res = keystore_->getKey(params.getKeyId());
+    auto key_res = keystore_.getKey(params.getKeyId());
     auto hashMode = rpc_hash_mode_to_backend(params.getMode());
-    auto op = crypto_backend_->createHMAC(hashMode, key_res.data);
+    auto op = crypto_backend_.createHMAC(hashMode, key_res.data);
 
     // Returning a new session object (Capability)
     context.getResults().setSession(
@@ -64,14 +64,19 @@ kj::Promise<void> CapnpCryptoServiceImpl::initHmac(InitHmacContext context)
     return kj::READY_NOW;
 }
 
-int32_t CapnpCryptoService::run(ICryptoBackend *crypto_backend, IKeyStore *keystore, const char *path)
+CapnpCryptoService::CapnpCryptoService(ICryptoBackend &crypto_backend, IKeyStore &keystore)
+    : CryptoServiceBase(crypto_backend, keystore)
 {
-    unlink(path);
-    std::string connect_str = std::string("unix:") + std::string(path);
+}
 
-    capnp::EzRpcServer server(kj::heap<CapnpCryptoServiceImpl>(crypto_backend, keystore), connect_str.c_str());
+int32_t CapnpCryptoService::run(std::string path)
+{
+    unlink(path.c_str());
+    std::string connect_str = std::string("unix:") + path;
 
-    LOG_INFO("Crypto Daemon listening on %s...", connect_str.c_str());
+    capnp::EzRpcServer server(kj::heap<CapnpCryptoServiceImpl>(crypto_backend_, keystore_), connect_str.c_str());
+
+    LOG_INFO("Crypto Daemon using capnp, listening on %s...", connect_str.c_str());
 
     // EzRpcServer provides its own WaitScope.
     // We wait on a promise that never resolves to keep the daemon alive.

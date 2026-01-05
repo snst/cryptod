@@ -9,7 +9,7 @@
 #include <unordered_map>
 
 #include "ikeystore.h"
-#include "icrypto_service.h"
+#include "crypto_service_base.h"
 #include "icrypto_backend.h"
 #include "crypto_socket_hdr.h"
 
@@ -45,20 +45,18 @@ struct Session
     request_result_t checkPacket();
 };
 
-class SocketCryptoService final : public ICryptoService
+class SocketCryptoService final : public CryptoServiceBase
 {
 public:
-    SocketCryptoService() = default;
+    SocketCryptoService(ICryptoBackend &crypto_backend, IKeyStore &keystore);
     ~SocketCryptoService();
-    int32_t run(ICryptoBackend *crypto_backend, IKeyStore *keystore, const char *path);
+    int32_t run(std::string path);
 
 protected:
     int server_fd_;
     std::string socket_path_;
     int epoll_fd_;
     std::unordered_map<int, std::unique_ptr<Session>> sessions_;
-    ICryptoBackend *crypto_backend_;
-    IKeyStore *keystore_;
 
     void setupSocket();
     bool sendResponse(Session &session, const void *payload, uint32_t payload_len);

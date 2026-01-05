@@ -98,10 +98,10 @@ request_result_t SocketCryptoService::handleRequest(Session &session)
             {
                 struct hmac_params *hmac = (struct hmac_params *)payload;
                 LOG_DEBUG("OP_TYPE_HMAC:STEP_INIT: key=%u, alg=%u", hmac->key_id, hmac->hash_alg);
-                auto key_res = keystore_->getKey(hmac->key_id);
+                auto key_res = keystore_.getKey(hmac->key_id);
                 if (key_res.ok())
                 {
-                    session.operation = crypto_backend_->createHMAC((crypto_hash_alg_t)hmac->hash_alg, key_res.data);
+                    session.operation = crypto_backend_.createHMAC((crypto_hash_alg_t)hmac->hash_alg, key_res.data);
                     session.operation->init();
                     ret = MSG_OK_CONTINUE;
                 }
@@ -403,11 +403,14 @@ request_result_t Session::checkPacket()
     return MSG_OK_CONTINUE;
 }
 
-int32_t SocketCryptoService::run(ICryptoBackend *crypto_backend, IKeyStore *keystore, const char *path)
+SocketCryptoService::SocketCryptoService(ICryptoBackend &crypto_backend, IKeyStore &keystore)
+    : CryptoServiceBase(crypto_backend, keystore)
 {
-    socket_path_ = std::string(path);
-    crypto_backend_ = crypto_backend;
-    keystore_ = keystore;
+}
+
+int32_t SocketCryptoService::run(std::string path)
+{
+    socket_path_ = path;
     setupSocket();
     loopHandleConnections();
     return 0;
