@@ -3,7 +3,7 @@
 // Copyright 2026 Stefan Schmidt
 
 #include <memory>
-#include "capnp_service.h"
+#include "capnp_crypto_service.h"
 #include "log_macro.h"
 
 HmacSessionImpl::HmacSessionImpl(std::unique_ptr<ICryptoOperation> op) : op_(std::move(op))

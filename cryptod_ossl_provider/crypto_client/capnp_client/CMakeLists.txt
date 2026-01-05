@@ -10,7 +10,7 @@ capnp_generate_cpp(CAPNP_SOURCES CAPNP_HEADERS ${CRYPTOD_PROTOCOL}/crypto.capnp)
 
 
 add_library(${PROJECT_NAME} STATIC
-    src/crypto_client.cpp
+    src/capnp_crypto_client.cpp
     ${CAPNP_SOURCES}
 )
 

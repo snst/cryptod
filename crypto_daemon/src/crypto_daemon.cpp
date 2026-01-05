@@ -4,7 +4,7 @@
 #include "crypto_daemon.h"
 #include <getopt.h>
 #include "crypto_globals.h"
-#include "capnp_service.h"
+#include "capnp_crypto_service.h"
 #include "ossl_backend.h"
 #include "dummy_backend.h"
 

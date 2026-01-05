@@ -1,0 +1,157 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Stefan Schmidt
+
+#include <optional>
+#include <capnp/ez-rpc.h>
+#include "crypto.capnp.h"
+#include "crypto_client.h"
+#include "crypto_globals.h"
+
+#define ENABLE_LOGGING
+#include "log_macro.h"
+
+static ::CryptoService::HashMode backend_hash_mode_to_rpc(crypto_hash_alg_t mode)
+{
+    switch (mode)
+    {
+    case HASH_ALG_SHA256:
+        return ::CryptoService::HashMode::SHA256;
+    case HASH_ALG_SHA384:
+        return ::CryptoService::HashMode::SHA384;
+    case HASH_ALG_SHA512:
+        return ::CryptoService::HashMode::SHA512;
+    default:
+        return ::CryptoService::HashMode::SHA256;
+    }
+}
+
+class RPCContext
+{
+public:
+    // Use optional to control destruction order explicitly
+    std::optional<CryptoService::HmacSession::Client> session;
+    std::optional<CryptoService::Client> service;
+    std::optional<capnp::EzRpcClient> rpcClient;
+    kj::WaitScope* waitScope = nullptr;    
+
+    RPCContext() {
+        // Create rpcClient first
+        rpcClient.emplace(CRYPTOD_SOCKET_RPC);
+        waitScope = &rpcClient->getWaitScope();
+
+        // Create service and session after rpcClient
+        service.emplace(rpcClient->getMain<CryptoService>());
+        // session can be created later as needed
+    }    
+
+    // Explicit destructor to destroy members in reverse order safely
+    ~RPCContext() {
+        // Destroy session first
+        session.reset();
+
+        // Destroy service next
+        service.reset();
+
+        // Destroy rpcClient last
+        rpcClient.reset();
+    }
+
+    // Delete copy/move to avoid accidental shallow copies
+    RPCContext(const RPCContext&) = delete;
+    RPCContext& operator=(const RPCContext&) = delete;
+};
+
+extern "C" void *cc_connect()
+{
+    try
+    {
+        RPCContext *context = new RPCContext();
+        return context;
+    }
+    catch (const kj::Exception &e)
+    {
+        LOG_ERROR("RPC Error: %s", e.getDescription().cStr());
+    }
+    return NULL;
+}
+
+extern "C" void cc_disconnect(void *vrpc)
+{
+    try
+    {
+        RPCContext *rpc = (RPCContext *)vrpc;
+        delete rpc;
+    }
+    catch (const kj::Exception &e)
+    {
+        LOG_ERROR("RPC Error: %s", e.getDescription().cStr());
+    }
+}
+
+extern "C" int cc_hmac_init(void *vrpc, crypto_key_id_t key_id, crypto_hash_alg_t hash_alg)
+{
+    RPCContext *rpc = (RPCContext *)vrpc;
+    try
+    {
+        auto req = rpc->service.value().initHmacRequest();
+        req.setKeyId(key_id);
+        auto hashMode = backend_hash_mode_to_rpc(hash_alg);
+        req.setMode(hashMode);
+
+        rpc->session = req.send().getSession();
+        return 1;
+    }
+    catch (const kj::Exception &e)
+    {
+        LOG_ERROR("RPC Error: %s", e.getDescription().cStr());
+    }
+    return 0;
+}
+
+extern "C" int cc_hmac_update(void *vrpc, const uint8_t *data, uint32_t size)
+{
+    RPCContext *rpc = (RPCContext *)vrpc;
+    try
+    {
+        auto req = rpc->session.value().updateRequest();
+        req.setData(capnp::Data::Reader(data, size));
+
+        // We use .wait() here to make the function synchronous
+        req.send().wait(*rpc->waitScope);
+        return 1;
+    }
+    catch (const kj::Exception &e)
+    {
+        LOG_ERROR("RPC Error: %s", e.getDescription().cStr());
+    }
+    return 0;
+}
+extern "C" int cc_hmac_final(void *vrpc, uint8_t *data, uint32_t *len)
+{
+    RPCContext *rpc = (RPCContext *)vrpc;
+    try
+    {
+        auto req = rpc->session.value().finalRequest();
+        auto result = req.send().wait(*rpc->waitScope);
+
+        // Convert binary to Hex string
+        auto hmacData = result.getHmac();
+        *len = hmacData.size();
+        memcpy(data, hmacData.begin(), hmacData.size());
+
+        rpc->session.reset();
+
+        return 1;
+    }
+    catch (const kj::Exception &e)
+    {
+        LOG_ERROR("RPC Error: %s", e.getDescription().cStr());
+    }
+    return 0;
+}
+/*
+__attribute__((destructor))
+static void on_library_unload() {
+
+}
+*/
