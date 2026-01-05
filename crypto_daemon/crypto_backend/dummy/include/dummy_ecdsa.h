@@ -4,19 +4,17 @@
 #pragma once
 
 #include "icrypto_backend.h"
-#include <openssl/hmac.h>
+#include <openssl/ecdsa.h>
 
-class OsslHmac : public ICryptoOperation
+class DummyEcdsa : public ICryptoOperation
 {
 private:
-    HMAC_CTX *ctx_;
-    bool initialized_;
-
+    size_t sum_;
 public:
-    OsslHmac(crypto_hash_alg_t algo, const SecureVector &key);
-    ~OsslHmac();
+    DummyEcdsa(const std::string &curve, bool sign_mode, const SecureVector &key_data);
+    ~DummyEcdsa();
     void init() override;
     void update(const uint8_t *data, size_t len) override;
-    bool verify(const uint8_t *sig, size_t sig_len) override;
+    bool verify(const uint8_t *sig, size_t sig_len);
     SecureVector finish() override;
 };

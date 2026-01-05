@@ -20,6 +20,7 @@ public:
         General,
         Socket,
         Crypto,
+        Null,
     };
 
     CryptoException(Reason r, std::string message)

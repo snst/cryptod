@@ -4,8 +4,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(keystore LANGUAGES CXX)
 
-find_package(OpenSSL REQUIRED)
-
 add_library(${PROJECT_NAME} STATIC
     src/keystore.cpp
 )

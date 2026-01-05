@@ -5,10 +5,10 @@
 
 #include "icrypto_backend.h"
 #include "crypto_types.h"
-#include "ossl_ecdsa.h"
-#include "ossl_hmac.h"
+#include "dummy_ecdsa.h"
+#include "dummy_hmac.h"
 
-class OpenSSLBackend : public ICryptoBackend
+class DummyBackend : public ICryptoBackend
 {
 public:
     std::unique_ptr<ICryptoOperation> createHMAC(crypto_hash_alg_t algo,

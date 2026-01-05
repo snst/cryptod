@@ -15,11 +15,11 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-    crypto_client
+    capnp_crypto_client
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME cryptod_provider)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-add_subdirectory(crypto_client)
+add_subdirectory(crypto_client/capnp_client)

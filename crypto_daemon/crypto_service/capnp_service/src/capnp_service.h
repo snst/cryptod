@@ -6,10 +6,11 @@
 
 #include <iostream>
 #include <unistd.h>
-#include "crypto_backend.h"
 #include <capnp/ez-rpc.h>
 #include "crypto.capnp.h"
 #include "ikeystore.h"
+#include "icrypto_service.h"
+#include "icrypto_backend.h"
 
 class HmacSessionImpl final : public CryptoService::HmacSession::Server
 {
@@ -22,11 +23,18 @@ private:
     std::unique_ptr<ICryptoOperation> op_;
 };
 
-class CryptoServiceImpl final : public CryptoService::Server
+class CapnpCryptoServiceImpl final : public CryptoService::Server
 {
 public:
-    CryptoServiceImpl(ICryptoBackend* crypto_backend, IKeyStore* keystore);
+    CapnpCryptoServiceImpl(ICryptoBackend *crypto_backend, IKeyStore *keystore);
     kj::Promise<void> initHmac(InitHmacContext context) override;
-    ICryptoBackend* crypto_backend_;
-    IKeyStore* keystore_;
+    ICryptoBackend *crypto_backend_;
+    IKeyStore *keystore_;
+};
+
+class CapnpService final : public ICryptoService
+{
+public:
+    CapnpService() = default;
+    int32_t run(ICryptoBackend *crypto_backend, IKeyStore *keystore, const char *path);
 };

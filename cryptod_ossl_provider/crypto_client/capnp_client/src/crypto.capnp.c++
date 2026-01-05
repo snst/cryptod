@@ -12,7 +12,7 @@ static const ::capnp::_::AlignedData<39> b_d16bc11175805bb5 = {
     153,  37,  83, 121,   4, 136,  83, 191,
       0,   0,   0,   0,   0,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0,   0,
-    143,   0,   0,   0,  17,   3,   0,   0,
+    143,   0,   0,   0,  21,   3,   0,   0,
      21,   0,   0,   0, 218,   0,   0,   0,
      33,   0,   0,   0,  39,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0,   0,
@@ -108,7 +108,7 @@ static const ::capnp::_::AlignedData<41> b_8aed46ad23881165 = {
     181,  91, 128, 117,  17, 193, 107, 209,
       0,   0,   0,   0,   0,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0,   0,
-    242,   0,   0,   0,  92,   2,   0,   0,
+    242,   0,   0,   0,  96,   2,   0,   0,
      21,   0,   0,   0,  58,   1,   0,   0,
      37,   0,   0,   0,   7,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0,   0,
@@ -124,7 +124,7 @@ static const ::capnp::_::AlignedData<41> b_8aed46ad23881165 = {
       8,   0,   0,   0,   3,   0,   5,   0,
       0,   0,   0,   0,   0,   0,   0,   0,
      81, 224,  54, 248, 117, 205,  11, 238,
-     25, 138, 210, 221, 251,  13, 208, 171,
+    110, 177, 192, 119,  51, 154,  95, 153,
      49,   0,   0,   0,  58,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0,   0,
@@ -147,8 +147,8 @@ static const ::capnp::_::AlignedData<41> b_8aed46ad23881165 = {
 ::capnp::word const* const bp_8aed46ad23881165 = b_8aed46ad23881165.words;
 #if !CAPNP_LITE
 static const ::capnp::_::RawSchema* const d_8aed46ad23881165[] = {
+  &s_995f9a3377c0b16e,
   &s_9c194e38fd32a995,
-  &s_abd00dfbddd28a19,
   &s_dd876805aff6a389,
   &s_ee0bcd75f836e051,
 };
@@ -203,35 +203,6 @@ static const uint16_t i_ee0bcd75f836e051[] = {0};
 const ::capnp::_::RawSchema s_ee0bcd75f836e051 = {
   0xee0bcd75f836e051, b_ee0bcd75f836e051.words, 36, nullptr, m_ee0bcd75f836e051,
   0, 1, i_ee0bcd75f836e051, nullptr, nullptr, { &s_ee0bcd75f836e051, nullptr, nullptr, 0, 0, nullptr }, false
-};
-#endif  // !CAPNP_LITE
-static const ::capnp::_::AlignedData<20> b_abd00dfbddd28a19 = {
-  {   0,   0,   0,   0,   6,   0,   6,   0,
-     25, 138, 210, 221, 251,  13, 208, 171,
-     39,   0,   0,   0,   1,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   7,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,
-     21,   0,   0,   0, 178,   1,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0,   0,   0,   0,
-     99, 114, 121, 112, 116, 111,  46,  99,
-     97, 112, 110, 112,  58,  67, 114, 121,
-    112, 116, 111,  83, 101, 114, 118, 105,
-     99, 101,  46,  72, 109,  97,  99,  83,
-    101, 115, 115, 105, 111, 110,  46, 117,
-    112, 100,  97, 116, 101,  36,  82, 101,
-    115, 117, 108, 116, 115,   0,   0,   0, }
-};
-::capnp::word const* const bp_abd00dfbddd28a19 = b_abd00dfbddd28a19.words;
-#if !CAPNP_LITE
-const ::capnp::_::RawSchema s_abd00dfbddd28a19 = {
-  0xabd00dfbddd28a19, b_abd00dfbddd28a19.words, 20, nullptr, nullptr,
-  0, 0, nullptr, nullptr, nullptr, { &s_abd00dfbddd28a19, nullptr, nullptr, 0, 0, nullptr }, false
 };
 #endif  // !CAPNP_LITE
 static const ::capnp::_::AlignedData<20> b_dd876805aff6a389 = {
@@ -479,9 +450,9 @@ constexpr ::capnp::_::RawSchema const* CryptoService::_capnpPrivate::schema;
 #endif  // !CAPNP_LITE
 
 #if !CAPNP_LITE
-::capnp::Request< ::CryptoService::HmacSession::UpdateParams,  ::CryptoService::HmacSession::UpdateResults>
+::capnp::StreamingRequest< ::CryptoService::HmacSession::UpdateParams>
 CryptoService::HmacSession::Client::updateRequest(::kj::Maybe< ::capnp::MessageSize> sizeHint) {
-  return newCall< ::CryptoService::HmacSession::UpdateParams,  ::CryptoService::HmacSession::UpdateResults>(
+  return newStreamingCall< ::CryptoService::HmacSession::UpdateParams>(
       0x8aed46ad23881165ull, 0, sizeHint, {true});
 }
 ::kj::Promise<void> CryptoService::HmacSession::Server::update(UpdateContext) {
@@ -515,9 +486,11 @@ CryptoService::HmacSession::Client::finalRequest(::kj::Maybe< ::capnp::MessageSi
   switch (methodId) {
     case 0:
       return {
-        update(::capnp::Capability::Server::internalGetTypedContext<
-             ::CryptoService::HmacSession::UpdateParams,  ::CryptoService::HmacSession::UpdateResults>(context)),
-        false,
+        kj::evalNow([&]() {
+          return update(::capnp::Capability::Server::internalGetTypedStreamingContext<
+               ::CryptoService::HmacSession::UpdateParams>(context));
+        }),
+        true,
         false
       };
     case 1:
@@ -553,18 +526,6 @@ constexpr uint16_t CryptoService::HmacSession::UpdateParams::_capnpPrivate::poin
 #if CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL
 constexpr ::capnp::Kind CryptoService::HmacSession::UpdateParams::_capnpPrivate::kind;
 constexpr ::capnp::_::RawSchema const* CryptoService::HmacSession::UpdateParams::_capnpPrivate::schema;
-#endif  // !CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL
-#endif  // !CAPNP_LITE
-
-// CryptoService::HmacSession::UpdateResults
-#if CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL
-constexpr uint16_t CryptoService::HmacSession::UpdateResults::_capnpPrivate::dataWordSize;
-constexpr uint16_t CryptoService::HmacSession::UpdateResults::_capnpPrivate::pointerCount;
-#endif  // !CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL
-#if !CAPNP_LITE
-#if CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL
-constexpr ::capnp::Kind CryptoService::HmacSession::UpdateResults::_capnpPrivate::kind;
-constexpr ::capnp::_::RawSchema const* CryptoService::HmacSession::UpdateResults::_capnpPrivate::schema;
 #endif  // !CAPNP_NEED_REDUNDANT_CONSTEXPR_DECL
 #endif  // !CAPNP_LITE
 

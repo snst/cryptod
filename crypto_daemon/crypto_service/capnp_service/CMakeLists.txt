@@ -2,7 +2,7 @@
 # Copyright 2026 Stefan Schmidt
 
 cmake_minimum_required(VERSION 3.16)
-project(crypto_client LANGUAGES CXX)
+project(capnp_crypto_service LANGUAGES CXX)
 
 set(CAPNPC_SRC_PREFIX "${CRYPTOD_PROTOCOL}" CACHE STRING "" FORCE)
 set(CAPNPC_OUTPUT_DIR "${PROJECT_SOURCE_DIR}/src" CACHE STRING "" FORCE)
@@ -10,13 +10,15 @@ capnp_generate_cpp(CAPNP_SOURCES CAPNP_HEADERS ${CRYPTOD_PROTOCOL}/crypto.capnp)
 
 
 add_library(${PROJECT_NAME} STATIC
-    src/crypto_client.cpp
+    src/capnp_service.cpp
     ${CAPNP_SOURCES}
 )
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
     ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/../include
     ${CRYPTOD_COMMON_INCLUDE}
 )
 

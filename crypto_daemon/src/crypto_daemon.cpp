@@ -4,8 +4,9 @@
 #include "crypto_daemon.h"
 #include <getopt.h>
 #include "crypto_globals.h"
-#include "crypto_service.h"
+#include "capnp_service.h"
 #include "ossl_backend.h"
+#include "dummy_backend.h"
 
 #define ENABLE_LOGGING
 #include "log_macro.h"
@@ -41,40 +42,11 @@ void CryptoDaemon::init(int argc, char *argv[])
     keystore.setCacheKeys(config.cacheKeys() != 0);
 
     crypto_backend = std::make_unique<OpenSSLBackend>();
+    // crypto_backend = std::make_unique<DummyBackend>();
 }
 
 int CryptoDaemon::run()
 {
-    unlink(CRYPTOD_SOCKET_PATH);
-
-    capnp::EzRpcServer server(kj::heap<CryptoServiceImpl>(crypto_backend.get(), &keystore), CRYPTOD_SOCKET_RPC);
-
-    LOG_INFO("Crypto Daemon listening on %s...", CRYPTOD_SOCKET_RPC);
-
-    // EzRpcServer provides its own WaitScope.
-    // We wait on a promise that never resolves to keep the daemon alive.
-    kj::NEVER_DONE.wait(server.getWaitScope());
-    return 0;
+    CapnpService service;
+    return service.run(crypto_backend.get(), &keystore, CRYPTOD_SOCKET_PATH);
 }
-
-/*
-bool updateCred()
-{
-    struct ucred cred{};
-    socklen_t cred_len = sizeof(cred);
-    if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len) == -1)
-    {
-        LOG_ERROR("getsockopt, failed to get uid.. fd=%d", fd);
-        return false;
-    }
-    else
-    {
-        pid = cred.pid;
-        uid = cred.uid;
-        gid = cred.gid;
-        label = "fd=" + std::to_string(fd) + " pid=" + std::to_string(pid) + " uid=" + std::to_string(uid) + " gid=" + std::to_string(gid);
-        LOG_INFO("Client connected: %s", label.c_str());
-        return true;
-    }
-}
-*/

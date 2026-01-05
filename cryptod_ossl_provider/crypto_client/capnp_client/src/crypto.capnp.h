@@ -31,7 +31,6 @@ enum class HashMode_c3b6e6ccf8c6cbdd: uint16_t {
 CAPNP_DECLARE_ENUM(HashMode, c3b6e6ccf8c6cbdd);
 CAPNP_DECLARE_SCHEMA(8aed46ad23881165);
 CAPNP_DECLARE_SCHEMA(ee0bcd75f836e051);
-CAPNP_DECLARE_SCHEMA(abd00dfbddd28a19);
 CAPNP_DECLARE_SCHEMA(dd876805aff6a389);
 CAPNP_DECLARE_SCHEMA(9c194e38fd32a995);
 CAPNP_DECLARE_SCHEMA(f42f94d4ca82d8b5);
@@ -72,7 +71,6 @@ struct CryptoService::HmacSession {
 #endif  // !CAPNP_LITE
 
   struct UpdateParams;
-  struct UpdateResults;
   struct FinalParams;
   struct FinalResults;
 
@@ -93,21 +91,6 @@ struct CryptoService::HmacSession::UpdateParams {
 
   struct _capnpPrivate {
     CAPNP_DECLARE_STRUCT_HEADER(ee0bcd75f836e051, 0, 1)
-    #if !CAPNP_LITE
-    static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
-    #endif  // !CAPNP_LITE
-  };
-};
-
-struct CryptoService::HmacSession::UpdateResults {
-  UpdateResults() = delete;
-
-  class Reader;
-  class Builder;
-  class Pipeline;
-
-  struct _capnpPrivate {
-    CAPNP_DECLARE_STRUCT_HEADER(abd00dfbddd28a19, 0, 0)
     #if !CAPNP_LITE
     static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
     #endif  // !CAPNP_LITE
@@ -248,7 +231,7 @@ public:
   Client& operator=(Client& other);
   Client& operator=(Client&& other);
 
-  ::capnp::Request< ::CryptoService::HmacSession::UpdateParams,  ::CryptoService::HmacSession::UpdateResults> updateRequest(
+  ::capnp::StreamingRequest< ::CryptoService::HmacSession::UpdateParams> updateRequest(
       ::kj::Maybe< ::capnp::MessageSize> sizeHint = nullptr);
   ::capnp::Request< ::CryptoService::HmacSession::FinalParams,  ::CryptoService::HmacSession::FinalResults> finalRequest(
       ::kj::Maybe< ::capnp::MessageSize> sizeHint = nullptr);
@@ -269,8 +252,7 @@ public:
 
 protected:
   typedef  ::CryptoService::HmacSession::UpdateParams UpdateParams;
-  typedef  ::CryptoService::HmacSession::UpdateResults UpdateResults;
-  typedef ::capnp::CallContext<UpdateParams, UpdateResults> UpdateContext;
+  typedef ::capnp::StreamingCallContext<UpdateParams> UpdateContext;
   virtual ::kj::Promise<void> update(UpdateContext context);
   typedef  ::CryptoService::HmacSession::FinalParams FinalParams;
   typedef  ::CryptoService::HmacSession::FinalResults FinalResults;
@@ -356,77 +338,6 @@ private:
 class CryptoService::HmacSession::UpdateParams::Pipeline {
 public:
   typedef UpdateParams Pipelines;
-
-  inline Pipeline(decltype(nullptr)): _typeless(nullptr) {}
-  inline explicit Pipeline(::capnp::AnyPointer::Pipeline&& typeless)
-      : _typeless(kj::mv(typeless)) {}
-
-private:
-  ::capnp::AnyPointer::Pipeline _typeless;
-  friend class ::capnp::PipelineHook;
-  template <typename, ::capnp::Kind>
-  friend struct ::capnp::ToDynamic_;
-};
-#endif  // !CAPNP_LITE
-
-class CryptoService::HmacSession::UpdateResults::Reader {
-public:
-  typedef UpdateResults Reads;
-
-  Reader() = default;
-  inline explicit Reader(::capnp::_::StructReader base): _reader(base) {}
-
-  inline ::capnp::MessageSize totalSize() const {
-    return _reader.totalSize().asPublic();
-  }
-
-#if !CAPNP_LITE
-  inline ::kj::StringTree toString() const {
-    return ::capnp::_::structString(_reader, *_capnpPrivate::brand());
-  }
-#endif  // !CAPNP_LITE
-
-private:
-  ::capnp::_::StructReader _reader;
-  template <typename, ::capnp::Kind>
-  friend struct ::capnp::ToDynamic_;
-  template <typename, ::capnp::Kind>
-  friend struct ::capnp::_::PointerHelpers;
-  template <typename, ::capnp::Kind>
-  friend struct ::capnp::List;
-  friend class ::capnp::MessageBuilder;
-  friend class ::capnp::Orphanage;
-};
-
-class CryptoService::HmacSession::UpdateResults::Builder {
-public:
-  typedef UpdateResults Builds;
-
-  Builder() = delete;  // Deleted to discourage incorrect usage.
-                       // You can explicitly initialize to nullptr instead.
-  inline Builder(decltype(nullptr)) {}
-  inline explicit Builder(::capnp::_::StructBuilder base): _builder(base) {}
-  inline operator Reader() const { return Reader(_builder.asReader()); }
-  inline Reader asReader() const { return *this; }
-
-  inline ::capnp::MessageSize totalSize() const { return asReader().totalSize(); }
-#if !CAPNP_LITE
-  inline ::kj::StringTree toString() const { return asReader().toString(); }
-#endif  // !CAPNP_LITE
-
-private:
-  ::capnp::_::StructBuilder _builder;
-  template <typename, ::capnp::Kind>
-  friend struct ::capnp::ToDynamic_;
-  friend class ::capnp::Orphanage;
-  template <typename, ::capnp::Kind>
-  friend struct ::capnp::_::PointerHelpers;
-};
-
-#if !CAPNP_LITE
-class CryptoService::HmacSession::UpdateResults::Pipeline {
-public:
-  typedef UpdateResults Pipelines;
 
   inline Pipeline(decltype(nullptr)): _typeless(nullptr) {}
   inline explicit Pipeline(::capnp::AnyPointer::Pipeline&& typeless)

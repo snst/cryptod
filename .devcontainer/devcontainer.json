@@ -4,7 +4,10 @@
 	"name": "C++",
 	"build": {
 		"dockerfile": "Dockerfile"
-	}
+	},
+	"containerEnv": {
+        "LD_LIBRARY_PATH": "/usr/local/lib:${LD_LIBRARY_PATH}"
+    }
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

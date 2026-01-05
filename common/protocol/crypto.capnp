@@ -14,7 +14,7 @@ interface CryptoService {
   interface HmacSession {
     # A stateful session representing a specific HMAC calculation.
     
-    update @0 (data :Data) -> ();
+    update @0 (data :Data) -> stream;
     # Append a chunk of bytes to the current HMAC context.
     
     final @1 () -> (hmac :Data);

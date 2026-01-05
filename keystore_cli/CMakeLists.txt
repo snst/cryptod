@@ -4,8 +4,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(keystore_cli)
 
-find_package(OpenSSL REQUIRED)
-
 add_executable(${PROJECT_NAME}
     src/main.cpp
 )

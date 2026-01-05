@@ -1,16 +1,10 @@
 
-
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Stefan Schmidt
 
 #include <memory>
+#include "capnp_service.h"
 #include "log_macro.h"
-#include "crypto_service.h"
-
-CryptoServiceImpl::CryptoServiceImpl(ICryptoBackend *crypto_backend, IKeyStore *keystore)
-    : crypto_backend_(crypto_backend), keystore_(keystore)
-{
-}
 
 HmacSessionImpl::HmacSessionImpl(std::unique_ptr<ICryptoOperation> op) : op_(std::move(op))
 {
@@ -51,7 +45,12 @@ static crypto_hash_alg_t rpc_hash_mode_to_backend(::CryptoService::HashMode mode
     }
 }
 
-kj::Promise<void> CryptoServiceImpl::initHmac(InitHmacContext context)
+CapnpCryptoServiceImpl::CapnpCryptoServiceImpl(ICryptoBackend *crypto_backend, IKeyStore *keystore)
+    : crypto_backend_(crypto_backend), keystore_(keystore)
+{
+}
+
+kj::Promise<void> CapnpCryptoServiceImpl::initHmac(InitHmacContext context)
 {
     auto params = context.getParams();
 
@@ -63,4 +62,19 @@ kj::Promise<void> CryptoServiceImpl::initHmac(InitHmacContext context)
     context.getResults().setSession(
         kj::heap<HmacSessionImpl>(std::move(op)));
     return kj::READY_NOW;
+}
+
+int32_t CapnpService::run(ICryptoBackend *crypto_backend, IKeyStore *keystore, const char *path)
+{
+    unlink(path);
+    std::string connect_str = std::string("unix:") + std::string(path);
+
+    capnp::EzRpcServer server(kj::heap<CapnpCryptoServiceImpl>(crypto_backend, keystore), connect_str.c_str());
+
+    LOG_INFO("Crypto Daemon listening on %s...", connect_str.c_str());
+
+    // EzRpcServer provides its own WaitScope.
+    // We wait on a promise that never resolves to keep the daemon alive.
+    kj::NEVER_DONE.wait(server.getWaitScope());
+    return 0;
 }

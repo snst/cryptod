@@ -9,7 +9,6 @@ add_executable(${PROJECT_NAME}
     src/crypto_daemon.cpp
 )
 
-
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         ${PROJECT_SOURCE_DIR}/../common/include
@@ -18,11 +17,13 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         openssl_backend
-        crypto_service
+        dummy_backend
+        capnp_crypto_service
         keystore
 )
 
 add_subdirectory(crypto_backend/ossl)
-add_subdirectory(crypto_service)
+add_subdirectory(crypto_backend/dummy)
+add_subdirectory(crypto_service/capnp_service)
 add_subdirectory(keystore)
 add_subdirectory(test)

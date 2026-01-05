@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "crypto_backend.h"
+#include "icrypto_backend.h"
 #include <openssl/ecdsa.h>
 
 class OsslEcdsa : public ICryptoOperation

@@ -10,6 +10,8 @@
 #define ENABLE_LOGGING
 #include "log_macro.h"
 
+#define CRYPTOD_SOCKET_RPC "unix:" CRYPTOD_SOCKET_PATH
+
 static ::CryptoService::HashMode backend_hash_mode_to_rpc(crypto_hash_alg_t mode)
 {
     switch (mode)
@@ -99,7 +101,14 @@ extern "C" int cc_hmac_update(void *vrpc, const uint8_t *data, uint32_t size)
         req.setData(capnp::Data::Reader(data, size));
 
         // We use .wait() here to make the function synchronous
-        req.send().wait(rpc->waitScope);
+        auto a = req.send(); //.wait(rpc->waitScope);
+        a.wait(rpc->waitScope);
+
+        // auto p = req.send();
+        // auto req = rpc->session.value().updateRequest();
+        // req.setData(capnp::Data::Reader(data, size));
+        // auto p = req.send();
+
         return 1;
     }
     catch (const kj::Exception &e)

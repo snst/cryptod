@@ -102,7 +102,7 @@ static int cdp_hmac_get_ctx_params(void *vhmac_ctx, OSSL_PARAM params[])
 
     if ((p = OSSL_PARAM_locate(params, OSSL_MAC_PARAM_SIZE)) != NULL)
     {
-        LOG_INFO("-OSSL_MAC_PARAM_SIZE: 32");
+        LOG_DEBUG("-OSSL_MAC_PARAM_SIZE: 32");
         return OSSL_PARAM_set_size_t(p, 32);
     }
     return 1;
@@ -143,7 +143,7 @@ static int cdp_hmac_set_ctx_params(void *vhmac_ctx, const OSSL_PARAM params[])
             return 0;
 
         hmac_ctx->hash_alg = hash_alg_from_string((char *)p->data, p->data_size);
-        LOG_INFO(" OSSL_MAC_PARAM_DIGEST: %s (%d)", (char *)p->data, hmac_ctx->hash_alg);
+        LOG_DEBUG(" OSSL_MAC_PARAM_DIGEST: %s (%d)", (char *)p->data, hmac_ctx->hash_alg);
     }
 
     /* Handle "properties" (if -propquery is passed) */
@@ -152,7 +152,7 @@ static int cdp_hmac_set_ctx_params(void *vhmac_ctx, const OSSL_PARAM params[])
     {
         if (p->data_type != OSSL_PARAM_UTF8_STRING)
             return 0;
-        LOG_INFO(" OSSL_MAC_PARAM_PROPERTIES: %s", (char *)p->data);
+        LOG_DEBUG(" OSSL_MAC_PARAM_PROPERTIES: %s", (char *)p->data);
     }
 
     /* Handle "key" (if passed via params instead of the init function) */
@@ -171,7 +171,7 @@ static int cdp_hmac_set_ctx_params(void *vhmac_ctx, const OSSL_PARAM params[])
                 hmac_ctx->key_id |= buf[i];
             }
         }
-        LOG_INFO(" OSSL_MAC_PARAM_KEY: length: %zu", p->data_size);
+        LOG_DEBUG(" OSSL_MAC_PARAM_KEY: length: %zu", p->data_size);
     }
 
     /* * IMPORTANT: Return 1 even if no recognized parameters were found,
