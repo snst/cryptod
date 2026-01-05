@@ -4,11 +4,9 @@
 #include <openssl/core_dispatch.h>
 #include <openssl/core_names.h>
 #include <openssl/params.h>
-#include "crypto_client.h"
+#include "icrypto_client.h"
 #include "crypto_utils.h"
 #include "cryptod_provider.h"
-
-#define ENABLE_LOGGING
 #include "log_macro.h"
 
 /* Function Prototypes */

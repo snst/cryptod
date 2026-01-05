@@ -11,19 +11,29 @@ add_executable(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/../common/include
+    ${PROJECT_SOURCE_DIR}/../common/include
 )
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        openssl_backend
-        dummy_backend
-        capnp_crypto_service
-        keystore
+    keystore
+    $<$<BOOL:${USE_RPC_SOCKET}>:socket_crypto_service>
+    $<$<BOOL:${USE_RPC_CAPNP}>:capnp_crypto_service>
+    $<$<BOOL:${USE_CRYPTO_BACKEND_OPENSSL}>:openssl_backend>
+    $<$<BOOL:${USE_CRYPTO_BACKEND_DUMMY}>:dummy_backend>
+)
+
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    $<$<BOOL:${USE_RPC_SOCKET}>:USE_RPC_SOCKET>
+    $<$<BOOL:${USE_RPC_CAPNP}>:USE_RPC_CAPNP>
+    $<$<BOOL:${USE_CRYPTO_BACKEND_OPENSSL}>:USE_CRYPTO_BACKEND_OPENSSL>
+    $<$<BOOL:${USE_CRYPTO_BACKEND_DUMMY}>:USE_CRYPTO_BACKEND_DUMMY>
 )
 
 add_subdirectory(crypto_backend/ossl)
 add_subdirectory(crypto_backend/dummy)
 add_subdirectory(crypto_service/capnp_service)
+add_subdirectory(crypto_service/socket_service)
 add_subdirectory(keystore)
 add_subdirectory(test)

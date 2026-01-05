@@ -64,7 +64,7 @@ kj::Promise<void> CapnpCryptoServiceImpl::initHmac(InitHmacContext context)
     return kj::READY_NOW;
 }
 
-int32_t CapnpService::run(ICryptoBackend *crypto_backend, IKeyStore *keystore, const char *path)
+int32_t CapnpCryptoService::run(ICryptoBackend *crypto_backend, IKeyStore *keystore, const char *path)
 {
     unlink(path);
     std::string connect_str = std::string("unix:") + std::string(path);

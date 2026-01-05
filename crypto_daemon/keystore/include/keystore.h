@@ -8,8 +8,6 @@
 #include <ctime>
 #include "ikeystore.h"
 #include "secure_vector.h"
-
-#define ENABLE_LOGGING
 #include "log_macro.h"
 
 enum class KeyType : uint8_t

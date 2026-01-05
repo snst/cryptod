@@ -15,7 +15,13 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-    capnp_crypto_client
+    $<$<BOOL:${USE_RPC_SOCKET}>:socket_crypto_client>
+    $<$<BOOL:${USE_RPC_CAPNP}>:capnp_crypto_client>
+)
+
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+    ${CRYPTOD_COMMON_INCLUDE}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME cryptod_provider)
@@ -23,3 +29,4 @@ set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME cryptod_provider)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(crypto_client/capnp_client)
+add_subdirectory(crypto_client/socket_client)

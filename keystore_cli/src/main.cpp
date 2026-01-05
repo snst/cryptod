@@ -5,8 +5,6 @@
 #include "keystore.h"
 #include "helpers.h"
 #include "crypto_config.h"
-
-#define ENABLE_LOGGING
 #include "log_macro.h"
 
 class App

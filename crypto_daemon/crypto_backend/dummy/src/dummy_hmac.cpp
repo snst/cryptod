@@ -6,8 +6,6 @@
 #include <openssl/err.h>
 #include "dummy_hmac.h"
 #include "crypto_exception.h"
-
-#define ENABLE_LOGGING
 #include "log_macro.h"
 
 DummyHmac::DummyHmac(crypto_hash_alg_t algo, const SecureVector &key) : sum_(0)

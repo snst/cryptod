@@ -8,7 +8,6 @@
 #include <openssl/x509.h>
 #include "crypto_exception.h"
 
-#define ENABLE_LOGGING
 #include "log_macro.h"
 
 OsslEcdsa::OsslEcdsa(const std::string &curve, bool sign_mode,

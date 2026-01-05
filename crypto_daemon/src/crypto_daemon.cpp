@@ -4,12 +4,19 @@
 #include "crypto_daemon.h"
 #include <getopt.h>
 #include "crypto_globals.h"
-#include "capnp_crypto_service.h"
-#include "ossl_backend.h"
-#include "dummy_backend.h"
-
-#define ENABLE_LOGGING
 #include "log_macro.h"
+#ifdef USE_CRYPTO_BACKEND_OPENSSL
+#include "ossl_backend.h"
+#endif
+#ifdef USE_CRYPTO_BACKEND_DUMMY
+#include "dummy_backend.h"
+#endif
+#ifdef USE_RPC_CAPNP
+#include "capnp_crypto_service.h"
+#endif
+#ifdef USE_RPC_SOCKET
+#include "socket_crypto_service.h"
+#endif
 
 void CryptoDaemon::init(int argc, char *argv[])
 {
@@ -41,12 +48,21 @@ void CryptoDaemon::init(int argc, char *argv[])
     keystore.loadStore(config.keystoreFile());
     keystore.setCacheKeys(config.cacheKeys() != 0);
 
+#ifdef USE_CRYPTO_BACKEND_OPENSSL
     crypto_backend = std::make_unique<OpenSSLBackend>();
-    // crypto_backend = std::make_unique<DummyBackend>();
+#endif
+#ifdef USE_CRYPTO_BACKEND_DUMMY
+    crypto_backend = std::make_unique<DummyBackend>();
+#endif
 }
 
 int CryptoDaemon::run()
 {
-    CapnpService service;
+#ifdef USE_RPC_CAPNP
+    CapnpCryptoService service;
+#endif
+#ifdef USE_RPC_SOCKET
+    SocketCryptoService service;
+#endif
     return service.run(crypto_backend.get(), &keystore, CRYPTOD_SOCKET_PATH);
 }

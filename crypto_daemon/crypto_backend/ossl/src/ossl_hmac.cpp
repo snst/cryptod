@@ -6,8 +6,6 @@
 #include <openssl/err.h>
 #include "ossl_hmac.h"
 #include "crypto_exception.h"
-
-#define ENABLE_LOGGING
 #include "log_macro.h"
 
 OsslHmac::OsslHmac(crypto_hash_alg_t algo, const SecureVector &key) : ctx_(HMAC_CTX_new()), initialized_(false)
@@ -79,7 +77,7 @@ SecureVector OsslHmac::finish()
 }
 
 std::unique_ptr<ICryptoOperation> OpenSSLBackend::createHMAC(crypto_hash_alg_t algo,
-                                                            const SecureVector &key)
+                                                             const SecureVector &key)
 {
     LOG_ENTRY("alg=%u", algo);
     auto hmac = std::make_unique<OsslHmac>(algo, key);

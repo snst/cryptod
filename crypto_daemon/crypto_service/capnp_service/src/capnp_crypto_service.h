@@ -32,9 +32,9 @@ public:
     IKeyStore *keystore_;
 };
 
-class CapnpService final : public ICryptoService
+class CapnpCryptoService final : public ICryptoService
 {
 public:
-    CapnpService() = default;
+    CapnpCryptoService() = default;
     int32_t run(ICryptoBackend *crypto_backend, IKeyStore *keystore, const char *path);
 };

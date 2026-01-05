@@ -4,10 +4,8 @@
 #include <optional>
 #include <capnp/ez-rpc.h>
 #include "crypto.capnp.h"
-#include "crypto_client.h"
+#include "icrypto_client.h"
 #include "crypto_globals.h"
-
-#define ENABLE_LOGGING
 #include "log_macro.h"
 
 #define CRYPTOD_SOCKET_RPC "unix:" CRYPTOD_SOCKET_PATH

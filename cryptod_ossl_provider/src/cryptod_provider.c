@@ -8,12 +8,10 @@
 #include <openssl/core_names.h>
 #include <openssl/params.h>
 #include "cryptod_provider.h"
-#include "crypto_client.h"
-
+#include "icrypto_client.h"
 
 extern const OSSL_DISPATCH cdp_hmac_functions[];
-//extern const OSSL_DISPATCH cdp_ecdsa_functions[];
-
+// extern const OSSL_DISPATCH cdp_ecdsa_functions[];
 
 /* Algorithm Query Table */
 static const OSSL_ALGORITHM cdp_macs[] = {
@@ -32,8 +30,8 @@ static const OSSL_ALGORITHM *cdp_query(void *provctx, int operation_id, int *no_
     {
     case OSSL_OP_MAC:
         return cdp_macs;
-    //case OSSL_OP_SIGNATURE:
-    //    return cdp_signatures;
+    // case OSSL_OP_SIGNATURE:
+    //     return cdp_signatures;
     default:
         return NULL;
     }

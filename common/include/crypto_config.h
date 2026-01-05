@@ -5,8 +5,6 @@
 
 #include "config_reader.h"
 #include "crypto_exception.h"
-
-#define ENABLE_LOGGING
 #include "log_macro.h"
 
 class CryptoConfig

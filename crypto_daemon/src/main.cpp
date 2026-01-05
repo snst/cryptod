@@ -3,8 +3,6 @@
 // Copyright 2026 Stefan Schmidt
 
 #include "crypto_daemon.h"
-
-#define ENABLE_LOGGING
 #include "log_macro.h"
 
 int main(int argc, char *argv[])
