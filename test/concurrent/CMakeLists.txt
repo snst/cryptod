@@ -2,7 +2,7 @@
 # Copyright 2026 Stefan Schmidt
 
 cmake_minimum_required(VERSION 3.10)
-project(hmac_benchmark)
+project(hmac_concurrent)
 
 add_executable(${PROJECT_NAME}
     src/main.cpp

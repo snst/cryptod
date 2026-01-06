@@ -27,7 +27,7 @@ struct Session
 {
     Connection *conn_;
     uint32_t session_id_;
-    crypto_msg_header request_;
+    crypto_msg_header_t request_;
     std::unique_ptr<ICryptoOperation> operation_;
     Session(Connection *conn, uint32_t session_id) : conn_(conn), session_id_(session_id) {};
     void send(const void *data, uint32_t len);
@@ -42,7 +42,7 @@ public:
     UnixSocket socket_;
     struct ucred cred_;
     std::string label;
-    crypto_msg_header request_;
+    crypto_msg_header_t request_;
     connection_state_t state_;
     std::unordered_map<uint32_t, std::unique_ptr<Session>> sessions_;
 
@@ -58,7 +58,7 @@ public:
 
     Session *addSession(uint32_t session_id)
     {
-        if (getSession(session_id) != 0)
+        if (getSession(session_id) != NULL)
         {
             LOG_ERROR("Session already existing: %u", session_id);
             return NULL;
@@ -97,8 +97,8 @@ protected:
     void sendResponseToLastRequest(Session &session, crypto_code_t status, const void *payload = NULL, uint32_t payload_len = 0U);
     void mainServerLoop();
     bool processConnection(Connection &connection);
-    void handleReceivedPacket(Connection &conn, crypto_msg_header &request, uint8_t *payload, const size_t payload_len);
-    void handleHmacRequest(Connection &conn, crypto_msg_header &request, uint8_t *payload, const size_t payload_len);
+    void handleReceivedPacket(Connection &conn, crypto_msg_header_t &request, uint8_t *payload, const size_t payload_len);
+    void handleHmacRequest(Connection &conn, crypto_msg_header_t &request, uint8_t *payload, const size_t payload_len);
 
     bool epoll_ctl_add(int fd, struct epoll_event *ev);
     void epoll_ctl_del(int fd);

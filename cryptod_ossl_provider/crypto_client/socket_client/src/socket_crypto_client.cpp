@@ -14,42 +14,44 @@
 #include "log_macro.h"
 #include "unix_socket.h"
 
-#define RECV_TIMEOUT 3000
+#define RECV_TIMEOUT -1
 
-static uint32_t next_session_id = 0;
+#define SOCKET_CTX(x) ((CryptoSocketContext *)x->rpc_)
 
 class CryptoSocketContext
 {
 public:
     UnixSocket socket_;
-    uint32_t session_id_;
-    struct crypto_msg_header request;
-    struct crypto_msg_header response;
 };
 
-void cc_send_request(CryptoSocketContext *ctx, const void *payload, uint32_t payload_len)
+void cc_send_request(rpc_hmac_t *hmac_ctx, crypto_msg_header_t &request, const void *payload, size_t payload_len)
 {
-    LOG_ENTRY("ctx=%p, fd=%d, op_type=%d, op_step=%d, payload_len=%u",
-              ctx, ctx->fd(), ctx->request.op_type, ctx->request.op_step, payload_len);
+    CryptoSocketContext *socket_ctx = SOCKET_CTX(hmac_ctx);
+    LOG_ENTRY("hmac_ctx=%p, fd=%d, op_type=%d, op_step=%d, payload_len=%u",
+              hmac_ctx, socket_ctx->fd(), request.op_type, request.op_step, payload_len);
 
-    ctx->request.payload_len = payload_len;
+    request.magic = CRYPTO_MAGIC_REQ;
+    request.version = CRYPTO_PROTO_VERSION;
+    request.session_id = hmac_ctx->session_id_;
+    request.payload_len = payload_len;
+    request.status = crypto_code_t::OK;
 
     // Send Header
-    ctx->socket_.send(&ctx->request, sizeof(struct crypto_msg_header));
+    socket_ctx->socket_.send(&request, sizeof(request));
 
     // Send Payload if exists
-    if (payload && ctx->request.payload_len > 0)
+    if (payload && request.payload_len > 0)
     {
-        ctx->socket_.send(payload, payload_len);
+        socket_ctx->socket_.send(payload, payload_len);
     }
 }
 
-bool cc_read_response(CryptoSocketContext *ctx, int32_t timeout)
+bool cc_read_response(rpc_hmac_t *hmac_ctx, crypto_msg_header_t &response, int32_t timeout)
 {
-    bool ret = ctx->socket_.recv(&ctx->response, sizeof(crypto_msg_header), timeout);
+    bool ret = SOCKET_CTX(hmac_ctx)->socket_.recv(&response, sizeof(crypto_msg_header_t), timeout);
     if (ret)
     {
-        if (!valid_crypto_msg_res(&ctx->response))
+        if (!valid_crypto_msg_res(&response))
         {
             throw CryptoException(crypto_code_t::COM_ERROR, "Corrupted response packet received");
         }
@@ -92,47 +94,27 @@ void cc_disconnect(void *context)
     delete ctx;
 }
 
-bool unexpected_msg_received(CryptoSocketContext *ctx)
+void throw_if_unexpected_message_received(rpc_hmac_t *hmac_ctx)
 {
-    if (cc_read_response(ctx, 0))
+    crypto_msg_header_t response = {0};
+    if (cc_read_response(hmac_ctx, response, 0))
     {
-        LOG_ERROR("Unexpected msg received: %d", ctx->response.status);
-        return true;
-    }
-    return false;
-}
-
-void throw_if_unexpected_message_received(CryptoSocketContext *ctx)
-{
-    if (cc_read_response(ctx, 0))
-    {
-        throw CryptoException((crypto_code_t)ctx->response.status, "Unexpected response received: " + std::to_string(ctx->response.status));
+        throw CryptoException((crypto_code_t)response.status, "Unexpected response received: " + std::to_string(response.status));
     }
 }
 
-void cc_send_init(CryptoSocketContext *ctx, crypto_op_type_t op_type, const void *payload, uint32_t payload_len)
-{
-    ctx->request.magic = CRYPTO_MAGIC_REQ;
-    ctx->request.version = CRYPTO_PROTO_VERSION;
-    ctx->session_id_ = ctx->session_id_;
-    ctx->request.op_type = op_type;
-    ctx->request.op_step = STEP_INIT;
-
-    cc_send_request(ctx, payload, payload_len);
-}
-
-crypto_code_t cc_hmac_init(void *context, crypto_key_id_t key_id, crypto_hash_alg_t hash_alg)
+crypto_code_t cc_hmac_init(rpc_hmac_t *hmac_ctx)
 {
     try
     {
-        CryptoSocketContext *ctx = (CryptoSocketContext *)context;
-        ctx->session_id_ = next_session_id++;
-        LOG_ENTRY("ctx=%p, fd=%d, session_id=%u, key_id=%d, hash_alg=%d", ctx, ctx->fd(), ctx->session_id_, key_id, hash_alg);
+        CryptoSocketContext *socket_ctx = SOCKET_CTX(hmac_ctx);
+        LOG_ENTRY("hmac_ctx=%p, fd=%d, session_id=%u, key_id=%d, hash_alg=%d", hmac_ctx, socket_ctx->fd(), hmac_ctx->session_id_, key_id, hash_alg);
 
-        throw_if_unexpected_message_received(ctx);
+        throw_if_unexpected_message_received(hmac_ctx);
 
-        struct hmac_params params = {.key_id = key_id, .hash_alg = hash_alg};
-        cc_send_init(ctx, OP_TYPE_HMAC, &params, sizeof(params));
+        crypto_msg_header_t request = {.op_type = OP_TYPE_HMAC, .op_step = STEP_INIT};
+        struct hmac_params params = {.key_id = hmac_ctx->key_id_, .hash_alg = hmac_ctx->hash_alg_};
+        cc_send_request(hmac_ctx, request, &params, sizeof(params));
         return crypto_code_t::OK;
     }
     catch (const CryptoException &e)
@@ -142,17 +124,17 @@ crypto_code_t cc_hmac_init(void *context, crypto_key_id_t key_id, crypto_hash_al
     }
 }
 
-crypto_code_t cc_hmac_update(void *context, const uint8_t *data, uint32_t len)
+crypto_code_t cc_hmac_update(rpc_hmac_t *hmac_ctx, const uint8_t *data, uint32_t len)
 {
     try
     {
-        CryptoSocketContext *ctx = (CryptoSocketContext *)context;
-        LOG_ENTRY("ctx=%p, fd=%d, len=%u", ctx, ctx->fd(), len);
+        CryptoSocketContext *socket_ctx = SOCKET_CTX(hmac_ctx);
+        LOG_ENTRY("hmac_ctx=%p, fd=%d, len=%u", hmac_ctx, socket_ctx->fd(), len);
 
-        throw_if_unexpected_message_received(ctx);
+        throw_if_unexpected_message_received(hmac_ctx);
 
-        ctx->request.op_step = STEP_UPDATE;
-        cc_send_request(ctx, data, len);
+        crypto_msg_header_t request = {.op_type = OP_TYPE_HMAC, .op_step = STEP_UPDATE};
+        cc_send_request(hmac_ctx, request, data, len);
         return crypto_code_t::OK;
     }
     catch (const CryptoException &e)
@@ -162,51 +144,54 @@ crypto_code_t cc_hmac_update(void *context, const uint8_t *data, uint32_t len)
     }
 }
 
-crypto_code_t cc_hmac_final(void *context, uint8_t *out, uint32_t *out_len)
+crypto_code_t cc_hmac_final(rpc_hmac_t *hmac_ctx, uint8_t *out, uint32_t *out_len)
 {
     try
     {
-        CryptoSocketContext *ctx = (CryptoSocketContext *)context;
+        CryptoSocketContext *socket_ctx = SOCKET_CTX(hmac_ctx);
         LOG_ENTRY("ctx=%p, socket=%d, out_len=%u", ctx, ctx->fd(), *len);
         uint32_t max_hmac_len = *out_len;
         *out_len = 0;
 
-        throw_if_unexpected_message_received(ctx);
+        throw_if_unexpected_message_received(hmac_ctx);
 
-        ctx->request.op_step = STEP_FINISH;
-        cc_send_request(ctx, NULL, 0);
+        crypto_msg_header_t request = {.op_type = OP_TYPE_HMAC, .op_step = STEP_FINAL};
 
-        if (!cc_read_response(ctx, RECV_TIMEOUT))
+        request.op_step = STEP_FINAL;
+        cc_send_request(hmac_ctx, request, NULL, 0);
+
+        crypto_msg_header_t response = {0};
+        if (!cc_read_response(hmac_ctx, response, RECV_TIMEOUT))
         {
             LOG_ERROR("Timeout to receive cc_hmac_final answer");
             return crypto_code_t::COM_ERROR;
         }
 
-        if (!valid_crypto_msg_res(&ctx->response))
+        if (!valid_crypto_msg_res(&response))
         {
             LOG_ERROR("Invalid cc_hmac_final response packet");
             return crypto_code_t::COM_ERROR;
         }
 
-        if (!valid_crypto_msg_ok(&ctx->response))
+        if (!valid_crypto_msg_ok(&response))
         {
-            LOG_ERROR("cc_hmac_final response not ok: %d, %s", ctx->response.status, cc_to_str((crypto_code_t)ctx->response.status));
-            return (crypto_code_t)ctx->response.status;
+            LOG_ERROR("cc_hmac_final response not ok: %d, %s", response.status, cc_to_str((crypto_code_t)response.status));
+            return (crypto_code_t)response.status;
         }
 
-        if ((ctx->response.payload_len == 0) || (ctx->response.payload_len > 128) || (ctx->response.payload_len > max_hmac_len))
+        if ((response.payload_len == 0) || (response.payload_len > 128) || (response.payload_len > max_hmac_len))
         {
-            LOG_ERROR("cc_hmac_final invalid payload len %u", ctx->response.payload_len);
+            LOG_ERROR("cc_hmac_final invalid payload len %u", response.payload_len);
             return crypto_code_t::COM_ERROR;
         }
 
-        if (!ctx->socket_.recv(out, ctx->response.payload_len, RECV_TIMEOUT))
+        if (!socket_ctx->socket_.recv(out, response.payload_len, RECV_TIMEOUT))
         {
             LOG_ERROR("Timeout to receive cc_hmac_final payload");
             return crypto_code_t::COM_ERROR;
         }
 
-        *out_len = ctx->response.payload_len;
+        *out_len = response.payload_len;
         return crypto_code_t::OK;
     }
     catch (const CryptoException &e)

@@ -18,13 +18,16 @@ static OSSL_FUNC_mac_final_fn cdp_hmac_final;
 
 static int cdp_hmac_set_ctx_params(void *vctx, const OSSL_PARAM params[]);
 
+static uint32_t next_session_id = 0U;
+
 static void *cdp_hmac_newctx(void *vrpc_ctx)
 {
     rpc_hmac_t *hmac_ctx = malloc(sizeof(rpc_hmac_t));
     LOG_ENTRY("hmac_ctx=%p", hmac_ctx);
     if (hmac_ctx != NULL)
     {
-        hmac_ctx->rpc = vrpc_ctx;
+        hmac_ctx->session_id_ = next_session_id++;
+        hmac_ctx->rpc_ = vrpc_ctx;
     }
     return hmac_ctx;
 }
@@ -55,7 +58,7 @@ static int cdp_hmac_init(void *vhmac_ctx, const unsigned char *key,
 
     if ((key != NULL) && (keylen == sizeof(crypto_key_id_t)))
     {
-        memcpy(&hmac_ctx->key_id, key, keylen);
+        memcpy(&hmac_ctx->key_id_, key, keylen);
     }
 
     // Even if params is empty, return 1.
@@ -67,7 +70,7 @@ static int cdp_hmac_init(void *vhmac_ctx, const unsigned char *key,
             return ret;
     }
 
-    crypto_code_t cc_ret = cc_hmac_init(hmac_ctx->rpc, hmac_ctx->key_id, hmac_ctx->hash_alg);
+    crypto_code_t cc_ret = cc_hmac_init(hmac_ctx);
     if (cc_ret != OK)
     {
         LOG_ERROR("cc_hmac_init error: %u", cc_ret);
@@ -80,7 +83,7 @@ static int cdp_hmac_update(void *vhmac_ctx, const unsigned char *data, size_t da
 {
     LOG_ENTRY("hmac_ctx=%p, len=%lu bytes", vhmac_ctx, datalen);
     rpc_hmac_t *hmac_ctx = (rpc_hmac_t *)vhmac_ctx;
-    crypto_code_t cc_ret = cc_hmac_update(hmac_ctx->rpc, data, datalen);
+    crypto_code_t cc_ret = cc_hmac_update(hmac_ctx, data, datalen);
     if (cc_ret != OK)
     {
         LOG_ERROR("cc_hmac_update error: %u", cc_ret);
@@ -99,7 +102,7 @@ static int cdp_hmac_final(void *vhmac_ctx, unsigned char *out, size_t *outl, siz
 
     *outl = 0;
     uint32_t out_len = (uint32_t)outsz;
-    crypto_code_t cc_ret = cc_hmac_final(hmac_ctx->rpc, out, &out_len);
+    crypto_code_t cc_ret = cc_hmac_final(hmac_ctx, out, &out_len);
     if (cc_ret != OK)
     {
         LOG_ERROR("cdp_hmac_final error: %u", cc_ret);
@@ -156,7 +159,7 @@ static int cdp_hmac_set_ctx_params(void *vhmac_ctx, const OSSL_PARAM params[])
         if (p->data_type != OSSL_PARAM_UTF8_STRING)
             return 0;
 
-        hmac_ctx->hash_alg = hash_alg_from_string((char *)p->data, p->data_size);
+        hmac_ctx->hash_alg_ = hash_alg_from_string((char *)p->data, p->data_size);
         LOG_DEBUG(" OSSL_MAC_PARAM_DIGEST: %s (%d)", (char *)p->data, hmac_ctx->hash_alg);
     }
 
@@ -178,7 +181,7 @@ static int cdp_hmac_set_ctx_params(void *vhmac_ctx, const OSSL_PARAM params[])
 
         LOG_DEBUG(" OSSL_MAC_PARAM_KEY: length: %zu", p->data_size);
 
-        if (!parse_key(p->data, p->data_size, &hmac_ctx->key_id))
+        if (!parse_key(p->data, p->data_size, &hmac_ctx->key_id_))
         {
             LOG_ERROR(" OSSL_MAC_PARAM_KEY: Invalid key passed.");
             return 0;

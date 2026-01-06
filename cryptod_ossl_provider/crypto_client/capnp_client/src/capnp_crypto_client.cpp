@@ -70,14 +70,14 @@ extern "C" void cc_disconnect(void *vrpc)
     }
 }
 
-extern "C" crypto_code_t cc_hmac_init(void *vrpc, crypto_key_id_t key_id, crypto_hash_alg_t hash_alg)
+extern "C" crypto_code_t cc_hmac_init(rpc_hmac_t *hmac_ctx)
 {
-    RPCContext *rpc = (RPCContext *)vrpc;
+    RPCContext *rpc = (RPCContext *)hmac_ctx->rpc_;
     try
     {
         auto req = rpc->service.initHmacRequest();
-        req.setKeyId(key_id);
-        auto hashMode = backend_hash_mode_to_rpc(hash_alg);
+        req.setKeyId(hmac_ctx->key_id_);
+        auto hashMode = backend_hash_mode_to_rpc(hmac_ctx->hash_alg_);
         req.setMode(hashMode);
         rpc->session = req.send().getSession();
         return OK;
@@ -89,9 +89,9 @@ extern "C" crypto_code_t cc_hmac_init(void *vrpc, crypto_key_id_t key_id, crypto
     return COM_ERROR;
 }
 
-extern "C" crypto_code_t cc_hmac_update(void *vrpc, const uint8_t *data, uint32_t size)
+extern "C" crypto_code_t cc_hmac_update(rpc_hmac_t *hmac_ctx, const uint8_t *data, uint32_t size)
 {
-    RPCContext *rpc = (RPCContext *)vrpc;
+    RPCContext *rpc = (RPCContext *)hmac_ctx->rpc_;
     try
     {
         auto req = rpc->session.value().updateRequest();
@@ -114,9 +114,9 @@ extern "C" crypto_code_t cc_hmac_update(void *vrpc, const uint8_t *data, uint32_
         return COM_ERROR;
     }
 }
-extern "C" crypto_code_t cc_hmac_final(void *vrpc, uint8_t *data, uint32_t *len)
+extern "C" crypto_code_t cc_hmac_final(rpc_hmac_t *hmac_ctx, uint8_t *data, uint32_t *len)
 {
-    RPCContext *rpc = (RPCContext *)vrpc;
+    RPCContext *rpc = (RPCContext *)hmac_ctx->rpc_;
     try
     {
         auto req = rpc->session.value().finalRequest();

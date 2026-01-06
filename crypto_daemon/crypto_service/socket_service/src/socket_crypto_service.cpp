@@ -48,7 +48,7 @@ void SocketCryptoService::setupSocket()
 
 void SocketCryptoService::sendResponseToLastRequest(Session &session, crypto_code_t status, const void *payload, uint32_t payload_len)
 {
-    crypto_msg_header response = session.request_;
+    crypto_msg_header_t response = session.request_;
     response.magic = CRYPTO_MAGIC_RES;
     response.status = (uint32_t)status;
     response.payload_len = payload_len;
@@ -135,7 +135,7 @@ void SocketCryptoService::mainServerLoop()
     }
 }
 
-void SocketCryptoService::handleHmacRequest(Connection &conn, crypto_msg_header &request, uint8_t *payload, const size_t payload_len)
+void SocketCryptoService::handleHmacRequest(Connection &conn, crypto_msg_header_t &request, uint8_t *payload, const size_t payload_len)
 {
     Session *session = NULL;
     if (request.op_step == STEP_INIT)
@@ -188,9 +188,9 @@ void SocketCryptoService::handleHmacRequest(Connection &conn, crypto_msg_header 
         session->operation_->update((const uint8_t *)payload, session->request_.payload_len);
     }
     break;
-    case STEP_FINISH:
+    case STEP_FINAL:
     {
-        LOG_DEBUG("OP_TYPE_HMAC:STEP_FINISH: len=%u", session.request.payload_len);
+        LOG_DEBUG("OP_TYPE_HMAC:STEP_FINAL: len=%u", session.request.payload_len);
         auto hmac = session->operation_->finish();
         sendResponseToLastRequest(*session, crypto_code_t::OK, hmac.data(), hmac.size());
         conn.removeSession(session->session_id_);
@@ -201,7 +201,7 @@ void SocketCryptoService::handleHmacRequest(Connection &conn, crypto_msg_header 
     }
 }
 
-void SocketCryptoService::handleReceivedPacket(Connection &conn, crypto_msg_header &request, uint8_t *payload, size_t const payload_len)
+void SocketCryptoService::handleReceivedPacket(Connection &conn, crypto_msg_header_t &request, uint8_t *payload, size_t const payload_len)
 {
     switch (request.op_type)
     {
@@ -228,7 +228,7 @@ bool SocketCryptoService::processConnection(Connection &conn)
                     LOG_DEBUG("recv msg: %s", dump_crypto_msg(&conn.request_));
                     if (!valid_crypto_msg_req(&conn.request_))
                     {
-                        LOG_ERROR("Received invalid crypto_msg_header. Closing connection.");
+                        LOG_ERROR("Received invalid crypto_msg_header_t. Closing connection.");
                         return false;
                     }
                     if (conn.request_.payload_len > 0)
