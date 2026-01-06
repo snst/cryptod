@@ -54,7 +54,10 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
                        const OSSL_DISPATCH **out,
                        void **provctx)
 {
-    *provctx = (void *)cc_connect();
+    void *ret = (void *)cc_connect();
+    if (!ret)
+        return 0;
+    *provctx = ret;
     *out = provider_functions;
     return 1;
 }

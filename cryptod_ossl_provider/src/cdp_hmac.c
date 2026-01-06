@@ -68,7 +68,6 @@ static int cdp_hmac_init(void *vhmac_ctx, const unsigned char *key,
     }
 
     ret = cc_hmac_init(hmac_ctx->rpc, hmac_ctx->key_id, hmac_ctx->hash_alg);
-
     return ret;
 }
 

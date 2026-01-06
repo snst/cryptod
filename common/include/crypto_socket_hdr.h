@@ -36,6 +36,21 @@ struct crypto_msg_header
     uint32_t payload_len;
 };
 
+static bool valid_crypto_msg_req(crypto_msg_header *hdr)
+{
+    return (hdr->magic == CRYPTO_MAGIC_REQ) && (hdr->version == CRYPTO_PROTO_VERSION);
+}
+
+static bool valid_crypto_msg_res(crypto_msg_header *hdr)
+{
+    return (hdr->magic == CRYPTO_MAGIC_RES) && (hdr->version == CRYPTO_PROTO_VERSION);
+}
+
+static bool valid_crypto_msg_ok(crypto_msg_header *hdr)
+{
+    return hdr->status == 0;
+}
+
 /* Parameters for HMAC Initialization */
 struct hmac_params
 {

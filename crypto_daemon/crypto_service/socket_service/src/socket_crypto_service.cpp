@@ -411,6 +411,8 @@ SocketCryptoService::SocketCryptoService(ICryptoBackend &crypto_backend, IKeySto
 int32_t SocketCryptoService::run(std::string path)
 {
     socket_path_ = path;
+    LOG_INFO("Crypto Daemon using unix socket, listening on %s...", path.c_str());
+
     setupSocket();
     loopHandleConnections();
     return 0;
