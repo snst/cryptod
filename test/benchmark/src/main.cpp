@@ -31,19 +31,19 @@ int do_hmac(const char *provider, std::vector<uint8_t> &data, const void *key, s
         size_t mac_len = 0;
         lib_ctx = OSSL_LIB_CTX_new();
         if (!lib_ctx)
-            throw(CryptoException(CryptoException::Reason::Null, "OSSL_LIB_CTX_new"));
+            throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "OSSL_LIB_CTX_new"));
 
         prov = OSSL_PROVIDER_load(lib_ctx, provider);
         if (!prov)
-            throw(CryptoException(CryptoException::Reason::General, "Failed to load provider"));
+            throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "Failed to load provider"));
 
         mac_algo = EVP_MAC_fetch(lib_ctx, "HMAC", NULL);
         if (!mac_algo)
-            throw(CryptoException(CryptoException::Reason::Null, "Failed to fetch HMAC"));
+            throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "Failed to fetch HMAC"));
 
         ctx = EVP_MAC_CTX_new(mac_algo);
         if (!ctx)
-            throw(CryptoException(CryptoException::Reason::Null, "Failed to create MAC context"));
+            throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "Failed to create MAC context"));
 
         OSSL_PARAM params[] = {
             OSSL_PARAM_utf8_string("digest", (void *)digest, strlen(digest)),
@@ -56,13 +56,13 @@ int do_hmac(const char *provider, std::vector<uint8_t> &data, const void *key, s
         for (uint32_t i = 0; i < n; i++)
         {
             if (!EVP_MAC_init(ctx, (const uint8_t *)key, key_len, params))
-                throw(CryptoException(CryptoException::Reason::Crypto, "EVP_MAC_init failed"));
+                throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MAC_init failed"));
 
             if (!EVP_MAC_update(ctx, data.data(), data.size()))
-                throw(CryptoException(CryptoException::Reason::Crypto, "EVP_MAC_update failed"));
+                throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MAC_update failed"));
 
             if (!EVP_MAC_final(ctx, mac, &mac_len, sizeof(mac)))
-                throw(CryptoException(CryptoException::Reason::Crypto, "EVP_MAC_final failed"));
+                throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MAC_final failed"));
         }
 
         clock_gettime(CLOCK_MONOTONIC, &t_end);

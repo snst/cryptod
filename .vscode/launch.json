@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/openssl/apps/openssl",
-            "args": ["mac", "-provider", "libcryptod_provider", "-macopt", "hexkey:aa", "-digest", "SHA512", "-in", "input3.txt", "HMAC"],
+            "args": ["mac", "-provider", "libcryptod_provider", "-macopt", "key:[0xaabb]", "-digest", "SHA512", "-in", "input3.txt", "HMAC"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/data",
             "environment": [ { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/openssl" },

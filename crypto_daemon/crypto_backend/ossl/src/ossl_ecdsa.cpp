@@ -21,11 +21,11 @@ OsslEcdsa::OsslEcdsa(const std::string &curve, bool sign_mode,
     else if (curve == "P-384")
         nid = NID_secp384r1;
     else
-        throw CryptoException(CryptoException::Reason::Crypto, "Unsupported curve: " + curve);
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "Unsupported curve: " + curve);
 
     EC_KEY *ec_key = EC_KEY_new_by_curve_name(nid);
     if (!ec_key)
-        throw CryptoException(CryptoException::Reason::Crypto, "EC_KEY_new_by_curve_name failed");
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "EC_KEY_new_by_curve_name failed");
 
     const unsigned char *p = key_data.data();
 
@@ -41,7 +41,7 @@ OsslEcdsa::OsslEcdsa(const std::string &curve, bool sign_mode,
     }
 
     if (!pkey_)
-        throw CryptoException(CryptoException::Reason::Crypto, "Key loading failed");
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "Key loading failed");
 }
 
 OsslEcdsa::~OsslEcdsa()
@@ -65,7 +65,7 @@ void OsslEcdsa::init()
 
     mdctx_ = EVP_MD_CTX_new();
     if (!mdctx_)
-        throw CryptoException(CryptoException::Reason::Crypto, "EVP_MD_CTX_new failed");
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MD_CTX_new failed");
 
     const EVP_MD *md = nullptr;
 
@@ -76,17 +76,17 @@ void OsslEcdsa::init()
     else if (bits <= 384)
         md = EVP_sha384();
     else
-        throw CryptoException(CryptoException::Reason::Crypto, "Unsupported EC key size");
+        throw CryptoException(crypto_code_t::UNSUPPORTED, "Unsupported EC key size");
 
     if (sign_mode_)
     {
         if (EVP_DigestSignInit(mdctx_, nullptr, md, nullptr, pkey_) <= 0)
-            throw CryptoException(CryptoException::Reason::Crypto, "EVP_DigestSignInit failed");
+            throw CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_DigestSignInit failed");
     }
     else
     {
         if (EVP_DigestVerifyInit(mdctx_, nullptr, md, nullptr, pkey_) <= 0)
-            throw CryptoException(CryptoException::Reason::Crypto, "EVP_DigestVerifyInit failed");
+            throw CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_DigestVerifyInit failed");
     }
 
     initialized_ = true;
@@ -95,24 +95,24 @@ void OsslEcdsa::init()
 void OsslEcdsa::update(const uint8_t *data, size_t len)
 {
     if (!initialized_)
-        throw CryptoException(CryptoException::Reason::Crypto, "Must call init() first");
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "Must call init() first");
 
     if (sign_mode_)
     {
         if (EVP_DigestSignUpdate(mdctx_, data, len) <= 0)
-            throw CryptoException(CryptoException::Reason::Crypto, "EVP_DigestSignUpdate failed");
+            throw CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_DigestSignUpdate failed");
     }
     else
     {
         if (EVP_DigestVerifyUpdate(mdctx_, data, len) <= 0)
-            throw CryptoException(CryptoException::Reason::Crypto, "EVP_DigestVerifyUpdate failed");
+            throw CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_DigestVerifyUpdate failed");
     }
 }
 
 SecureVector OsslEcdsa::finish()
 {
     if (!initialized_)
-        throw CryptoException(CryptoException::Reason::Crypto, "Must call init() first");
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "Must call init() first");
 
     SecureVector result;
 
@@ -121,24 +121,24 @@ SecureVector OsslEcdsa::finish()
         size_t sig_len = 0;
 
         if (EVP_DigestSignFinal(mdctx_, nullptr, &sig_len) <= 0)
-            throw CryptoException(CryptoException::Reason::Crypto, "EVP_DigestSignFinal(size) failed");
+            throw CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_DigestSignFinal(size) failed");
 
         result.resize(sig_len);
 
         if (EVP_DigestSignFinal(mdctx_, result.data(), &sig_len) <= 0)
-            throw CryptoException(CryptoException::Reason::Crypto, "EVP_DigestSignFinal(data) failed");
+            throw CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_DigestSignFinal(data) failed");
 
         return result;
     }
 
     // Verification handled separately
-    throw CryptoException(CryptoException::Reason::Crypto, "finish() called in verify mode");
+    throw CryptoException(crypto_code_t::CRYPTO_ERROR, "finish() called in verify mode");
 }
 
 bool OsslEcdsa::verify(const uint8_t *sig, size_t sig_len)
 {
     if (!initialized_ || sign_mode_)
-        throw CryptoException(CryptoException::Reason::Crypto, "verify() called in invalid state");
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "verify() called in invalid state");
 
     int rc = EVP_DigestVerifyFinal(mdctx_, sig, sig_len);
     return rc == 1;

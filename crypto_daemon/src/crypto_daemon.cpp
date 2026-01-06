@@ -30,12 +30,12 @@ void CryptoDaemon::init(int argc, char *argv[])
         case ':':
         case '?':
         default:
-            throw CryptoException(CryptoException::Reason::InvalidValue, "Command line error");
+            throw CryptoException(crypto_code_t::INVALID_VALUE, "Command line error");
         }
     }
 
     if (configFile.empty())
-        throw CryptoException(CryptoException::Reason::General, "Missing config file. Parameter: -c FILENAME");
+        throw CryptoException(crypto_code_t::INVALID_VALUE, "Missing config file. Parameter: -c FILENAME");
 
     config.load(configFile);
     keystore.setMasterKey(config.masterKey());

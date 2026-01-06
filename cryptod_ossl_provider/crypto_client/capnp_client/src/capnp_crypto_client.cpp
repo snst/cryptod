@@ -70,7 +70,7 @@ extern "C" void cc_disconnect(void *vrpc)
     }
 }
 
-extern "C" int cc_hmac_init(void *vrpc, crypto_key_id_t key_id, crypto_hash_alg_t hash_alg)
+extern "C" crypto_code_t cc_hmac_init(void *vrpc, crypto_key_id_t key_id, crypto_hash_alg_t hash_alg)
 {
     RPCContext *rpc = (RPCContext *)vrpc;
     try
@@ -79,18 +79,17 @@ extern "C" int cc_hmac_init(void *vrpc, crypto_key_id_t key_id, crypto_hash_alg_
         req.setKeyId(key_id);
         auto hashMode = backend_hash_mode_to_rpc(hash_alg);
         req.setMode(hashMode);
-
         rpc->session = req.send().getSession();
-        return 1;
+        return OK;
     }
     catch (const kj::Exception &e)
     {
         LOG_ERROR("RPC Error: %s", e.getDescription().cStr());
     }
-    return 0;
+    return COM_ERROR;
 }
 
-extern "C" int cc_hmac_update(void *vrpc, const uint8_t *data, uint32_t size)
+extern "C" crypto_code_t cc_hmac_update(void *vrpc, const uint8_t *data, uint32_t size)
 {
     RPCContext *rpc = (RPCContext *)vrpc;
     try
@@ -107,15 +106,15 @@ extern "C" int cc_hmac_update(void *vrpc, const uint8_t *data, uint32_t size)
         // req.setData(capnp::Data::Reader(data, size));
         // auto p = req.send();
 
-        return 1;
+        return OK;
     }
     catch (const kj::Exception &e)
     {
         LOG_ERROR("RPC Error: %s", e.getDescription().cStr());
+        return COM_ERROR;
     }
-    return 0;
 }
-extern "C" int cc_hmac_final(void *vrpc, uint8_t *data, uint32_t *len)
+extern "C" crypto_code_t cc_hmac_final(void *vrpc, uint8_t *data, uint32_t *len)
 {
     RPCContext *rpc = (RPCContext *)vrpc;
     try
@@ -130,11 +129,11 @@ extern "C" int cc_hmac_final(void *vrpc, uint8_t *data, uint32_t *len)
 
         rpc->session.reset();
 
-        return 1;
+        return OK;
     }
     catch (const kj::Exception &e)
     {
         LOG_ERROR("RPC Error: %s", e.getDescription().cStr());
+        return COM_ERROR;
     }
-    return 0;
 }

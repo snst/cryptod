@@ -5,29 +5,16 @@
 
 #include <stdexcept>
 #include <string>
+#include "crypto_codes.h"
 
 class CryptoException : public std::runtime_error
 {
 public:
-    enum class Reason
-    {
-        FileNotFound,
-        PermissionDenied,
-        SyntaxError,
-        MissingKey,
-        InvalidValue,
-        ValueNotFound,
-        General,
-        Socket,
-        Crypto,
-        Null,
-    };
-
-    CryptoException(Reason r, std::string message)
+    CryptoException(crypto_code_t r, std::string message)
         : std::runtime_error(std::move(message)), reason_(r) {}
 
-    Reason reason() const noexcept { return reason_; }
+    crypto_code_t reason() const noexcept { return reason_; }
 
 private:
-    Reason reason_;
+    crypto_code_t reason_;
 };

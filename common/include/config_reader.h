@@ -33,7 +33,7 @@ public:
     {
         std::ifstream file(filename);
         if (!file)
-            throw CryptoException(CryptoException::Reason::FileNotFound, "File not found: " + filename);
+            throw CryptoException(crypto_code_t::NOT_FOUND, "File not found: " + filename);
 
         std::string line;
         while (std::getline(file, line))
@@ -59,7 +59,7 @@ public:
         {
             return it->second;
         }
-        throw CryptoException(CryptoException::Reason::ValueNotFound, "Config value not found: " + key);
+        throw CryptoException(crypto_code_t::NOT_FOUND, "Config value not found: " + key);
     }
 
     const std::string getString(const std::string &key, const std::string &defaultValue) const
@@ -70,7 +70,7 @@ public:
         }
         catch (const CryptoException &e)
         {
-            if (e.reason() == CryptoException::Reason::ValueNotFound)
+            if (e.reason() == crypto_code_t::NOT_FOUND)
             {
                 return defaultValue;
             }
@@ -92,10 +92,10 @@ public:
             }
             catch (...)
             {
-                throw CryptoException(CryptoException::Reason::ValueNotFound, "Invalid config value for: " + key);
+                throw CryptoException(crypto_code_t::NOT_FOUND, "Invalid config value for: " + key);
             }
         }
-        throw CryptoException(CryptoException::Reason::ValueNotFound, "Config value not found: " + key);
+        throw CryptoException(crypto_code_t::NOT_FOUND, "Config value not found: " + key);
     }
 
     int getInt(const std::string &key, int defaultValue) const
@@ -106,7 +106,7 @@ public:
         }
         catch (const CryptoException &e)
         {
-            if (e.reason() == CryptoException::Reason::ValueNotFound)
+            if (e.reason() == crypto_code_t::NOT_FOUND)
             {
                 return defaultValue;
             }
@@ -122,11 +122,11 @@ public:
     {
         auto it = data.find(key);
         if (it == data.end())
-            throw CryptoException(CryptoException::Reason::ValueNotFound, "Value not found: " + key);
+            throw CryptoException(crypto_code_t::NOT_FOUND, "Value not found: " + key);
 
         const std::string &hex = it->second;
         if (hex.size() % 2 != 0)
-            throw CryptoException(CryptoException::Reason::ValueNotFound, "Invalid value for: " + key);
+            throw CryptoException(crypto_code_t::NOT_FOUND, "Invalid value for: " + key);
 
         SecureVector vec;
         vec.reserve(hex.size() / 2);

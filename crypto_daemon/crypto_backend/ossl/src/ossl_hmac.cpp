@@ -12,7 +12,7 @@ OsslHmac::OsslHmac(crypto_hash_alg_t algo, const SecureVector &key) : ctx_(HMAC_
 {
     LOG_ENTRY("");
     if (!ctx_)
-        throw CryptoException(CryptoException::Reason::Crypto, "HMAC_CTX_new failed");
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "HMAC_CTX_new failed");
 
     const EVP_MD *md = nullptr;
     switch (algo)
@@ -33,7 +33,7 @@ OsslHmac::OsslHmac(crypto_hash_alg_t algo, const SecureVector &key) : ctx_(HMAC_
         md = EVP_sha512();
         break;
     default:
-        throw CryptoException(CryptoException::Reason::Crypto, "Unsupported HMAC algo: " + algo);
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "Unsupported HMAC algo: " + algo);
     }
 
     HMAC_Init_ex(ctx_, key.data(), key.size(), md, nullptr);
@@ -57,13 +57,13 @@ void OsslHmac::update(const uint8_t *data, size_t len)
 {
     LOG_ENTRY("len=%lu", len);
     if (!initialized_)
-        throw CryptoException(CryptoException::Reason::Crypto, "Must call init() first");
+        throw CryptoException(crypto_code_t::CRYPTO_ERROR, "Must call init() first");
     HMAC_Update(ctx_, data, len);
 }
 
 bool OsslHmac::verify(const uint8_t *sig, size_t sig_len)
 {
-    throw CryptoException(CryptoException::Reason::Crypto, "Must not be called");
+    throw CryptoException(crypto_code_t::CRYPTO_ERROR, "Must not be called");
 }
 
 SecureVector OsslHmac::finish()

@@ -240,11 +240,11 @@ Result KeyStore::getKeyWithAccessCheck(uint32_t keyId, uint32_t uid, uint32_t gi
 {
     auto it = entries_.find(keyId);
     if (it == entries_.end())
-        return Result(ResultStatus::NotFound);
+        return Result(crypto_code_t::KEY_NOT_FOUND);
 
     KeyEntry &entry = it->second;
     if (!entry.hasPermission(uid, gid, perm))
-        return Result(ResultStatus::PermissionDenied);
+        return Result(crypto_code_t::NO_ACCESS);
 
     try
     {
@@ -253,11 +253,11 @@ Result KeyStore::getKeyWithAccessCheck(uint32_t keyId, uint32_t uid, uint32_t gi
                                       it->second.iv,
                                       it->second.metadata,
                                       it->second.authTag);
-        return Result(ResultStatus::Ok, std::move(key));
+        return Result(crypto_code_t::OK, std::move(key));
     }
     catch (...)
     {
-        return Result(ResultStatus::CryptoError);
+        return Result(crypto_code_t::ERROR);
     }
 }
 
@@ -265,7 +265,7 @@ Result KeyStore::getKey(uint32_t keyId)
 {
     auto it = entries_.find(keyId);
     if (it == entries_.end())
-        return Result(ResultStatus::NotFound);
+        return Result(crypto_code_t::KEY_NOT_FOUND);
 
     try
     {
@@ -279,7 +279,7 @@ Result KeyStore::getKey(uint32_t keyId)
                                                      it->second.metadata,
                                                      it->second.authTag);
             }
-            return Result(ResultStatus::Ok, it->second.decryptedKey);
+            return Result(crypto_code_t::OK, it->second.decryptedKey);
         }
         else
         {
@@ -289,11 +289,11 @@ Result KeyStore::getKey(uint32_t keyId)
                                           it->second.iv,
                                           it->second.metadata,
                                           it->second.authTag);
-            return Result(ResultStatus::Ok, std::move(key));
+            return Result(crypto_code_t::OK, std::move(key));
         }
     }
     catch (...)
     {
-        return Result(ResultStatus::CryptoError);
+        return Result(crypto_code_t::ERROR);
     }
 }

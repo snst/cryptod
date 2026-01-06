@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include "crypto_types.h"
+#include "crypto_codes.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -13,9 +14,9 @@ extern "C"
 
     void *cc_connect();
     void cc_disconnect(void *context);
-    int cc_hmac_init(void *context, crypto_key_id_t key_id, crypto_hash_alg_t hash_alg);
-    int cc_hmac_update(void *context, const uint8_t *data, uint32_t len);
-    int cc_hmac_final(void *context, uint8_t *out, uint32_t *out_len);
+    crypto_code_t cc_hmac_init(void *context, crypto_key_id_t key_id, crypto_hash_alg_t hash_alg);
+    crypto_code_t cc_hmac_update(void *context, const uint8_t *data, uint32_t len);
+    crypto_code_t cc_hmac_final(void *context, uint8_t *out, uint32_t *out_len);
 
 #ifdef __cplusplus
 } // extern "C"

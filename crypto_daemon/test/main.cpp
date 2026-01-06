@@ -35,21 +35,21 @@ TEST_F(KeyStoreTest, addKey)
   EXPECT_FALSE(key1 == key2);
 
   auto rKey1 = store2.getKeyWithAccessCheck(1, 1000, 0, KeyPermission::Hmac);
-  EXPECT_EQ(ResultStatus::Ok, rKey1.status);
+  EXPECT_EQ(crypto_code_t::OK, rKey1.status);
   EXPECT_TRUE(key1 == rKey1.data);
 
   auto rKey2 = store2.getKeyWithAccessCheck(2, 1000, 0, KeyPermission::Hmac);
-  EXPECT_EQ(ResultStatus::Ok, rKey2.status);
+  EXPECT_EQ(crypto_code_t::OK, rKey2.status);
   EXPECT_TRUE(key2 == rKey2.data);
 
   auto rKey3 = store2.getKeyWithAccessCheck(3, 1000, 0, KeyPermission::Hmac);
-  EXPECT_EQ(ResultStatus::NotFound, rKey3.status);
+  EXPECT_EQ(crypto_code_t::KEY_NOT_FOUND, rKey3.status);
 
   auto rKey2uid = store2.getKeyWithAccessCheck(2, 1001, 0, KeyPermission::Hmac);
-  EXPECT_EQ(ResultStatus::PermissionDenied, rKey2uid.status);
+  EXPECT_EQ(crypto_code_t::NO_ACCESS, rKey2uid.status);
 
   auto rKey2perm = store2.getKeyWithAccessCheck(2, 1000, 0, KeyPermission::Sign);
-  EXPECT_EQ(ResultStatus::PermissionDenied, rKey2perm.status);
+  EXPECT_EQ(crypto_code_t::NO_ACCESS, rKey2perm.status);
 
   EXPECT_FALSE(key1 == rKey2.data);
   EXPECT_FALSE(key2 == rKey1.data);

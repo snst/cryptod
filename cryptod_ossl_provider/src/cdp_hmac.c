@@ -67,16 +67,26 @@ static int cdp_hmac_init(void *vhmac_ctx, const unsigned char *key,
             return ret;
     }
 
-    ret = cc_hmac_init(hmac_ctx->rpc, hmac_ctx->key_id, hmac_ctx->hash_alg);
-    return ret;
+    crypto_code_t cc_ret = cc_hmac_init(hmac_ctx->rpc, hmac_ctx->key_id, hmac_ctx->hash_alg);
+    if (cc_ret != OK)
+    {
+        LOG_ERROR("cc_hmac_init error: %u", cc_ret);
+        return 0;
+    }
+    return 1;
 }
 
 static int cdp_hmac_update(void *vhmac_ctx, const unsigned char *data, size_t datalen)
 {
     LOG_ENTRY("hmac_ctx=%p, len=%lu bytes", vhmac_ctx, datalen);
     rpc_hmac_t *hmac_ctx = (rpc_hmac_t *)vhmac_ctx;
-    int ret = cc_hmac_update(hmac_ctx->rpc, data, datalen);
-    return ret;
+    crypto_code_t cc_ret = cc_hmac_update(hmac_ctx->rpc, data, datalen);
+    if (cc_ret != OK)
+    {
+        LOG_ERROR("cc_hmac_update error: %u", cc_ret);
+        return 0;
+    }
+    return 1;
 }
 
 static int cdp_hmac_final(void *vhmac_ctx, unsigned char *out, size_t *outl, size_t outsz)
@@ -84,12 +94,19 @@ static int cdp_hmac_final(void *vhmac_ctx, unsigned char *out, size_t *outl, siz
     LOG_ENTRY("vhmac_ctx=%p, outsz=%lu", vhmac_ctx, outsz);
     rpc_hmac_t *hmac_ctx = (rpc_hmac_t *)vhmac_ctx;
 
-    if (outsz < 32)
+    if (!out || !outl || outsz < 32)
         return 0;
+
+    *outl = 0;
     uint32_t out_len = (uint32_t)outsz;
-    int ret = cc_hmac_final(hmac_ctx->rpc, out, &out_len);
+    crypto_code_t cc_ret = cc_hmac_final(hmac_ctx->rpc, out, &out_len);
+    if (cc_ret != OK)
+    {
+        LOG_ERROR("cdp_hmac_final error: %u", cc_ret);
+        return 0;
+    }
     *outl = out_len;
-    return ret;
+    return 1;
 }
 
 static int cdp_hmac_get_ctx_params(void *vhmac_ctx, OSSL_PARAM params[])
@@ -158,17 +175,14 @@ static int cdp_hmac_set_ctx_params(void *vhmac_ctx, const OSSL_PARAM params[])
     {
         if (p->data_type != OSSL_PARAM_OCTET_STRING)
             return 0;
-        if (p->data_size > 0 && p->data_size <= sizeof(hmac_ctx->key_id))
-        {
-            uint8_t *buf = (uint8_t *)p->data;
-            hmac_ctx->key_id = buf[0];
-            for (size_t i = 1; i < p->data_size; i++)
-            {
-                hmac_ctx->key_id <<= 8;
-                hmac_ctx->key_id |= buf[i];
-            }
-        }
+
         LOG_DEBUG(" OSSL_MAC_PARAM_KEY: length: %zu", p->data_size);
+
+        if (!parse_key(p->data, p->data_size, &hmac_ctx->key_id))
+        {
+            LOG_ERROR(" OSSL_MAC_PARAM_KEY: Invalid key passed.");
+            return 0;
+        }
     }
 
     /* * IMPORTANT: Return 1 even if no recognized parameters were found,

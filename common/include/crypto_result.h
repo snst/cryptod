@@ -6,29 +6,19 @@
 #include "secure_vector.h"
 #include <cstdint>
 #include <utility>
-
-enum class ResultStatus : uint32_t
-{
-    Ok = 0,
-    NotFound,
-    PermissionDenied,
-    InvalidKey,
-    CryptoError,
-    IOError,
-    Unknown
-};
+#include "crypto_codes.h"
 
 class Result
 {
 public:
-    Result() : status(ResultStatus::Unknown) {}
-    Result(ResultStatus theStatus, SecureVector theData = {})
+    Result() : status(crypto_code_t::ERROR) {}
+    Result(crypto_code_t theStatus, SecureVector theData = {})
         : status(theStatus), data(std::move(theData)) {}
 
-    bool ok() const noexcept { return status == ResultStatus::Ok; }
-    void setStatus(ResultStatus theStatus) noexcept { status = theStatus; }
+    bool ok() const noexcept { return status == crypto_code_t::OK; }
+    void setStatus(crypto_code_t theStatus) noexcept { status = theStatus; }
     void setData(SecureVector &&theData) noexcept { data = std::move(theData); }
 
-    ResultStatus status;
+    crypto_code_t status;
     SecureVector data;
 };

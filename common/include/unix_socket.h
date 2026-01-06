@@ -9,6 +9,7 @@
 #include <poll.h>
 #include <sys/ioctl.h>
 #include "crypto_exception.h"
+#include "log_macro.h"
 
 class UnixSocket
 {
@@ -16,12 +17,15 @@ protected:
     int fd_;
 
 public:
+    UnixSocket(int fd) : fd_(fd)
+    {
+    }
     UnixSocket()
     {
         fd_ = socket(AF_UNIX, SOCK_STREAM, 0);
         if (fd_ < 0)
         {
-            throw CryptoException(CryptoException::Reason::Socket, "Failed to create socket");
+            throw CryptoException(crypto_code_t::COM_ERROR, "Failed to create socket");
         }
     }
     ~UnixSocket()
@@ -40,7 +44,7 @@ public:
         int ret = ::connect(fd_, (struct sockaddr *)&addr, sizeof(addr));
         if (ret < 0)
         {
-            throw CryptoException(CryptoException::Reason::Socket, "Failed to connect socket, ret=" + std::to_string(ret));
+            throw CryptoException(crypto_code_t::COM_ERROR, "Failed to connect socket, ret=" + std::to_string(ret));
         }
     }
 
@@ -57,7 +61,7 @@ public:
 
         ssize_t ret = ::recv(fd_, data, len, MSG_WAITALL);
         if (ret != len)
-            throw CryptoException(CryptoException::Reason::Socket, "Socket recv error, len=" + std::to_string(len) + ", ret=" + std::to_string(ret));
+            throw CryptoException(crypto_code_t::COM_ERROR, "Socket recv error, len=" + std::to_string(len) + ", ret=" + std::to_string(ret));
 
         return true;
     }
@@ -66,13 +70,13 @@ public:
     {
         ssize_t ret = ::send(fd_, data, len, 0);
         if (ret != len)
-            throw CryptoException(CryptoException::Reason::Socket, "Socket send error, len=" + std::to_string(len) + ", ret=" + std::to_string(ret));
+            throw CryptoException(crypto_code_t::COM_ERROR, "Socket send error, len=" + std::to_string(len) + ", ret=" + std::to_string(ret));
     }
 
     uint32_t readable_bytes(int32_t timeout)
     {
         if (fd_ < 0)
-            throw CryptoException(CryptoException::Reason::Socket, "readable_bytes failed, invalid socket");
+            throw CryptoException(crypto_code_t::COM_ERROR, "readable_bytes failed, invalid socket");
 
         // Step 1: Poll to check if fd is readable or closed
         struct pollfd pfd = {0};
@@ -81,7 +85,7 @@ public:
 
         int ret = poll(&pfd, 1, timeout); // timeout=0 -> non-blocking
         if (ret < 0)
-            throw CryptoException(CryptoException::Reason::Socket, "socket poll failed");
+            throw CryptoException(crypto_code_t::COM_ERROR, "socket poll failed");
 
         if (ret == 0)
         {
@@ -90,16 +94,17 @@ public:
         }
 
         // Check for errors / hangup
-        /*if (pfd.revents & (POLLERR | POLLHUP))
+        if (pfd.revents & (POLLERR | POLLHUP))
         {
-            return 0; // EOF or error, nothing to read
-        }*/
+            //    return 0; // EOF or error, nothing to read
+            throw CryptoException(crypto_code_t::COM_ERROR, "socket closed");
+        }
 
         // Step 2: Query exact number of bytes available
         int bytes_available = 0;
         if (ioctl(fd_, FIONREAD, &bytes_available) < 0)
         {
-            throw CryptoException(CryptoException::Reason::Socket, "socket ioctl failed");
+            throw CryptoException(crypto_code_t::COM_ERROR, "socket ioctl failed");
         }
 
         return bytes_available;
@@ -108,5 +113,19 @@ public:
     int fd()
     {
         return fd_;
+    }
+
+    bool getCred(struct ucred &cred)
+    {
+        socklen_t cred_len = sizeof(cred);
+        if (getsockopt(fd_, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len) == -1)
+        {
+            LOG_ERROR("getsockopt, failed to get uid.. fd=%d", fd_);
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
 };

@@ -32,7 +32,7 @@ void DummyHmac::update(const uint8_t *data, size_t len)
 
 bool DummyHmac::verify(const uint8_t *sig, size_t sig_len)
 {
-    throw CryptoException(CryptoException::Reason::Crypto, "Must not be called");
+    throw CryptoException(crypto_code_t::CRYPTO_ERROR, "Must not be called");
 }
 
 SecureVector DummyHmac::finish()
@@ -44,7 +44,7 @@ SecureVector DummyHmac::finish()
 }
 
 std::unique_ptr<ICryptoOperation> DummyBackend::createHMAC(crypto_hash_alg_t algo,
-                                                            const SecureVector &key)
+                                                           const SecureVector &key)
 {
     LOG_ENTRY("alg=%u", algo);
     auto hmac = std::make_unique<DummyHmac>(algo, key);
