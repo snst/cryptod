@@ -103,9 +103,9 @@ int main(int argc, char *argv[])
 {
     std::vector<uint8_t> input(512);
     auto key = load_file("aes256_2.key");
-    crypto_key_id_t key_id = 0xaa;
+    crypto_key_id_t key_id = 0x22;
 
-    uint32_t n = 200000;
+    uint32_t n = 15000;
 
     do_hmac("libcryptod_provider", input, &key_id, sizeof(key_id), "SHA512", n);
     do_hmac("default", input, key.data(), key.size(), "SHA512", n);

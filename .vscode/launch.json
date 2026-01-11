@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/openssl/apps/openssl",
-            "args": ["mac", "-provider", "libcryptod_provider", "-macopt", "key:[0xaa]", "-digest", "SHA512", "-in", "input3.txt", "HMAC"],
+            "args": ["mac", "-provider", "libcryptod_provider", "-macopt", "key:[0x11]", "-digest", "SHA1", "-in", "input3.txt", "HMAC"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/data",
             "environment": [ { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/openssl" },
@@ -127,10 +127,10 @@
             ]
         },
         {
-            "name": "(gdb) concurrent",
+            "name": "(gdb) test_hmac_concurrent",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/test/concurrent/hmac_concurrent",
+            "program": "${workspaceFolder}/build/tests/test_hmac_concurrent",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/data",

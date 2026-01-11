@@ -6,24 +6,8 @@
 #include "crypto.capnp.h"
 #include "icrypto_client.h"
 #include "crypto_globals.h"
+#include "crypto_capnp_common.h"
 #include "log_macro.h"
-
-#define CRYPTOD_SOCKET_RPC "unix:" CRYPTOD_SOCKET_PATH
-
-static ::CryptoService::HashMode backend_hash_mode_to_rpc(crypto_hash_alg_t mode)
-{
-    switch (mode)
-    {
-    case HASH_ALG_SHA256:
-        return ::CryptoService::HashMode::SHA256;
-    case HASH_ALG_SHA384:
-        return ::CryptoService::HashMode::SHA384;
-    case HASH_ALG_SHA512:
-        return ::CryptoService::HashMode::SHA512;
-    default:
-        return ::CryptoService::HashMode::SHA256;
-    }
-}
 
 class RPCContext
 {
@@ -77,7 +61,7 @@ extern "C" crypto_code_t cc_hmac_init(rpc_hmac_t *hmac_ctx)
     {
         auto req = rpc->service.initHmacRequest();
         req.setKeyId(hmac_ctx->key_id_);
-        auto hashMode = backend_hash_mode_to_rpc(hmac_ctx->hash_alg_);
+        auto hashMode = to_crypto_hash_alg(hmac_ctx->hash_alg_);
         req.setMode(hashMode);
         rpc->session = req.send().getSession();
         return OK;

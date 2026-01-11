@@ -24,6 +24,10 @@ namespace schemas {
 CAPNP_DECLARE_SCHEMA(d16bc11175805bb5);
 CAPNP_DECLARE_SCHEMA(c3b6e6ccf8c6cbdd);
 enum class HashMode_c3b6e6ccf8c6cbdd: uint16_t {
+  INVALID,
+  NONE,
+  SHA1,
+  SHA224,
   SHA256,
   SHA384,
   SHA512,

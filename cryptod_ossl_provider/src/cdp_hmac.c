@@ -27,7 +27,8 @@ static void *cdp_hmac_newctx(void *vrpc_ctx)
     if (hmac_ctx != NULL)
     {
         hmac_ctx->session_id_ = next_session_id++;
-        hmac_ctx->rpc_ = vrpc_ctx;
+        // hmac_ctx->rpc_ = vrpc_ctx;
+        hmac_ctx->rpc_ = cc_connect();
     }
     return hmac_ctx;
 }
@@ -45,6 +46,7 @@ static void cdp_hmac_freectx(void *vhmac_ctx)
     if (NULL != vhmac_ctx)
     {
         rpc_hmac_t *hmac_ctx = (rpc_hmac_t *)vhmac_ctx;
+        cc_disconnect(hmac_ctx->rpc_);
         free(hmac_ctx);
     }
 }

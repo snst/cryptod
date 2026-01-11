@@ -6,9 +6,13 @@
 interface CryptoService {
   
   enum HashMode {
-    sha256 @0;
-    sha384 @1;
-    sha512 @2;
+    invalid @0;
+    none  @1;
+    sha1 @2;
+    sha224 @3;
+    sha256 @4;
+    sha384 @5;
+    sha512 @6;
   }
 
   interface HmacSession {

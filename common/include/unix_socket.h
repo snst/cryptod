@@ -30,6 +30,11 @@ public:
     }
     ~UnixSocket()
     {
+        disconnect();
+    }
+
+    void disconnect()
+    {
         if (fd_ >= 0)
         {
             ::close(fd_);
@@ -48,7 +53,32 @@ public:
         }
     }
 
-    bool recv(void *data, size_t len, int32_t timeout = -1)
+    void setRecvTimeout(uint32_t sec, uint32_t ms)
+    {
+        struct timeval tv;
+        tv.tv_sec = sec;
+        tv.tv_usec = ms * 1000U;
+
+        setsockopt(fd_, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
+    }
+
+    bool recv(void *data, size_t *len)
+    {
+        ssize_t ret = ::recv(fd_, data, *len, 0);
+        if (ret > 0)
+        {
+            *len = ret;
+            return true;
+        }
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            return false;
+        }
+
+        throw CryptoException(crypto_code_t::COM_ERROR, "Socket recv error, ret=" + std::to_string(ret));
+    }
+
+    bool recvComplete(void *data, size_t len, int32_t timeout = -1)
     {
         if (timeout != -1)
         {

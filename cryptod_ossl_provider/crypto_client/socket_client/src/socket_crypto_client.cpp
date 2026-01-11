@@ -48,7 +48,7 @@ void cc_send_request(rpc_hmac_t *hmac_ctx, crypto_msg_header_t &request, const v
 
 bool cc_read_response(rpc_hmac_t *hmac_ctx, crypto_msg_header_t &response, int32_t timeout)
 {
-    bool ret = SOCKET_CTX(hmac_ctx)->socket_.recv(&response, sizeof(crypto_msg_header_t), timeout);
+    bool ret = SOCKET_CTX(hmac_ctx)->socket_.recvComplete(&response, sizeof(crypto_msg_header_t), timeout);
     if (ret)
     {
         if (!valid_crypto_msg_res(&response))
@@ -91,6 +91,7 @@ void cc_disconnect(void *context)
 {
     CryptoSocketContext *ctx = (CryptoSocketContext *)context;
     LOG_ENTRY("ctx=%p, fd=%d", ctx, ctx->fd());
+    ctx->socket_.disconnect();
     delete ctx;
 }
 
@@ -185,7 +186,7 @@ crypto_code_t cc_hmac_final(rpc_hmac_t *hmac_ctx, uint8_t *out, uint32_t *out_le
             return crypto_code_t::COM_ERROR;
         }
 
-        if (!socket_ctx->socket_.recv(out, response.payload_len, RECV_TIMEOUT))
+        if (!socket_ctx->socket_.recvComplete(out, response.payload_len, RECV_TIMEOUT))
         {
             LOG_ERROR("Timeout to receive cc_hmac_final payload");
             return crypto_code_t::COM_ERROR;

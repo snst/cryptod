@@ -105,7 +105,7 @@ void SocketCryptoService::mainServerLoop()
                 client_ev.data.fd = client_fd;
                 if (epoll_ctl_add(client_fd, &client_ev) && conn->updateCred())
                 {
-                    LOG_INFO("Adding connection: %s", conn->label.c_str());
+                    LOG_DEBUG("Adding connection: %s", conn->label.c_str());
                     connections_[client_fd] = std::move(conn);
                 }
             }
@@ -126,7 +126,7 @@ void SocketCryptoService::mainServerLoop()
 
                 if (!processConnection(conn))
                 {
-                    LOG_INFO("Removing connection: %s", conn.label.c_str());
+                    LOG_DEBUG("Removing connection: %s", conn.label.c_str());
                     epoll_ctl_del(conn.socket_.fd());
                     connections_.erase(it);
                 }
@@ -222,7 +222,7 @@ bool SocketCryptoService::processConnection(Connection &conn)
         {
             if (conn.state_ == WAIT_HDR)
             {
-                has_data = conn.socket_.recv(&conn.request_, sizeof(conn.request_), 0);
+                has_data = conn.socket_.recvComplete(&conn.request_, sizeof(conn.request_), 0);
                 if (has_data)
                 {
                     LOG_DEBUG("recv msg: %s", dump_crypto_msg(&conn.request_));
@@ -245,7 +245,7 @@ bool SocketCryptoService::processConnection(Connection &conn)
             if (conn.state_ == WAIT_PAYLOAD)
             {
                 std::vector<uint8_t> buffer(2048);
-                has_data = conn.socket_.recv(buffer.data(), conn.request_.payload_len, 0);
+                has_data = conn.socket_.recvComplete(buffer.data(), conn.request_.payload_len, 0);
                 if (has_data)
                 {
                     LOG_DEBUG("Read complete payload %u", conn.request_.payload_len);

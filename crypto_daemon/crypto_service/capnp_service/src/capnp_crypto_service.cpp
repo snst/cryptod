@@ -4,6 +4,7 @@
 
 #include <memory>
 #include "capnp_crypto_service.h"
+#include "crypto_capnp_common.h"
 #include "log_macro.h"
 
 HmacSessionImpl::HmacSessionImpl(std::unique_ptr<ICryptoOperation> op) : op_(std::move(op))
@@ -30,21 +31,6 @@ kj::Promise<void> HmacSessionImpl::final(FinalContext context)
     return kj::READY_NOW;
 }
 
-static crypto_hash_alg_t rpc_hash_mode_to_backend(::CryptoService::HashMode mode)
-{
-    switch (mode)
-    {
-    case ::CryptoService::HashMode::SHA256:
-        return HASH_ALG_SHA256;
-    case ::CryptoService::HashMode::SHA384:
-        return HASH_ALG_SHA384;
-    case ::CryptoService::HashMode::SHA512:
-        return HASH_ALG_SHA512;
-    default:
-        return HASH_ALG_INVALID;
-    }
-}
-
 CapnpCryptoServiceImpl::CapnpCryptoServiceImpl(ICryptoBackend &crypto_backend, IKeyStore &keystore)
     : crypto_backend_(crypto_backend), keystore_(keystore)
 {
@@ -55,7 +41,7 @@ kj::Promise<void> CapnpCryptoServiceImpl::initHmac(InitHmacContext context)
     auto params = context.getParams();
 
     auto key_res = keystore_.getKey(params.getKeyId());
-    auto hashMode = rpc_hash_mode_to_backend(params.getMode());
+    auto hashMode = to_capnp_hash_mode(params.getMode());
     auto op = crypto_backend_.createHMAC(hashMode, key_res.data);
 
     // Returning a new session object (Capability)

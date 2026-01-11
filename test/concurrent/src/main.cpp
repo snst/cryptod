@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <thread>
+#include <atomic>
+#include <chrono>
+#include <random>
+#include <algorithm>
 #include <openssl/evp.h>
 #include <openssl/provider.h>
 #include <openssl/params.h>
@@ -11,6 +16,7 @@
 #include "crypto_types.h"
 #include "crypto_exception.h"
 #include "log_macro.h"
+#include <gtest/gtest.h>
 
 static double elapsed_sec(struct timespec start, struct timespec end)
 {
@@ -18,101 +24,172 @@ static double elapsed_sec(struct timespec start, struct timespec end)
            (end.tv_nsec - start.tv_nsec) / 1e9;
 }
 
-int do_hmac(const char *provider, std::vector<uint8_t> &data, const void *key, size_t key_len, const char *digest, uint32_t n)
+class HMac
 {
-    LOG_INFO("Provider:  %s", provider);
-    OSSL_LIB_CTX *lib_ctx = NULL;
-    OSSL_PROVIDER *prov = NULL;
-
-    EVP_MAC *mac_algo = NULL;
-    EVP_MAC_CTX *ctx1 = NULL;
-    EVP_MAC_CTX *ctx2 = NULL;
-    try
+public:
+    HMac(const char *provider)
     {
-        unsigned char mac1[EVP_MAX_MD_SIZE];
-        unsigned char mac2[EVP_MAX_MD_SIZE];
-        size_t mac1_len = 0;
-        size_t mac2_len = 0;
-        lib_ctx = OSSL_LIB_CTX_new();
-        if (!lib_ctx)
+        lib_ctx_ = OSSL_LIB_CTX_new();
+        if (!lib_ctx_)
             throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "OSSL_LIB_CTX_new"));
 
-        prov = OSSL_PROVIDER_load(lib_ctx, provider);
-        if (!prov)
+        prov_ = OSSL_PROVIDER_load(lib_ctx_, provider);
+        if (!prov_)
             throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "Failed to load provider"));
 
-        mac_algo = EVP_MAC_fetch(lib_ctx, "HMAC", NULL);
-        if (!mac_algo)
+        mac_algo_ = EVP_MAC_fetch(lib_ctx_, "HMAC", NULL);
+        if (!mac_algo_)
             throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "Failed to fetch HMAC"));
+    }
 
-        ctx1 = EVP_MAC_CTX_new(mac_algo);
-        if (!ctx1)
-            throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "Failed to create MAC context"));
+    ~HMac()
+    {
+        if (mac_algo_)
+            EVP_MAC_free(mac_algo_);
 
-        ctx2 = EVP_MAC_CTX_new(mac_algo);
-        if (!ctx2)
-            throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "Failed to create MAC context"));
+        if (prov_)
+            OSSL_PROVIDER_unload(prov_);
+
+        if (lib_ctx_)
+            OSSL_LIB_CTX_free(lib_ctx_);
+    }
+
+    std::vector<uint8_t> calc(std::vector<uint8_t> &data, const void *key, size_t key_len, const char *digest)
+    {
+        EVP_MAC_CTX *ctx = NULL;
+        size_t mac_out_len = 0;
+        std::vector<uint8_t> hmac(EVP_MAX_MD_SIZE);
 
         OSSL_PARAM params[] = {
             OSSL_PARAM_utf8_string("digest", (void *)digest, strlen(digest)),
             OSSL_PARAM_END};
 
-        for (uint32_t i = 0; i < n; i++)
+        try
         {
-            if (!EVP_MAC_init(ctx1, (const uint8_t *)key, key_len, params))
-                throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MAC_init failed"));
-            if (!EVP_MAC_init(ctx2, (const uint8_t *)key, key_len, params))
+            ctx = EVP_MAC_CTX_new(mac_algo_);
+            if (!ctx)
+                throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "Failed to create MAC context"));
+
+            if (!EVP_MAC_init(ctx, (const uint8_t *)key, key_len, params))
                 throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MAC_init failed"));
 
-            if (!EVP_MAC_update(ctx1, data.data(), data.size()))
-                throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MAC_update failed"));
-            if (!EVP_MAC_update(ctx2, data.data(), data.size()))
+            if (!EVP_MAC_update(ctx, data.data(), data.size()))
                 throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MAC_update failed"));
 
-            if (!EVP_MAC_final(ctx1, mac1, &mac1_len, sizeof(mac1)))
+            if (!EVP_MAC_final(ctx, hmac.data(), &mac_out_len, hmac.size()))
                 throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MAC_final failed"));
-            if (!EVP_MAC_final(ctx2, mac2, &mac2_len, sizeof(mac2)))
-                throw(CryptoException(crypto_code_t::CRYPTO_ERROR, "EVP_MAC_final failed"));
+            hmac.resize(mac_out_len);
+        }
+        catch (const CryptoException &e)
+        {
+            hmac.resize(0);
+            LOG_EXCEPTION(e.what());
         }
 
-        /* Print result */
-        dumpHex(std::string("1.HMAC-") + std::string(digest), mac1, mac1_len);
-        LOG_INFO("\n");
-        dumpHex(std::string("2.HMAC-") + std::string(digest), mac2, mac2_len);
-        LOG_INFO("\n\n");
+        if (ctx)
+            EVP_MAC_CTX_free(ctx);
+
+        return hmac;
     }
-    catch (const CryptoException &e)
+
+    OSSL_PROVIDER *prov_ = NULL;
+    OSSL_LIB_CTX *lib_ctx_ = NULL;
+    EVP_MAC *mac_algo_ = NULL;
+};
+
+class MTTest
+{
+protected:
+    std::vector<std::thread> threads_;
+    std::atomic<bool> running_;
+    uint32_t id_;
+    std::vector<uint8_t> key1_;
+    std::vector<uint8_t> key2_;
+    HMac provHmac_;
+    const char *sha_;
+    size_t input_len_;
+    std::atomic<size_t> processed_len_{0};
+    std::atomic<size_t> processed_calls_{0};
+
+public:
+    MTTest(const char *sha = NULL, size_t input_len = 0)
+        : provHmac_("libcryptod_provider"), sha_(sha), input_len_(input_len)
     {
-        LOG_EXCEPTION(e.what());
+        key1_ = load_file("aes256_1.key");
+        key2_ = load_file("aes256_2.key");
     }
 
-    if (ctx2)
-        EVP_MAC_CTX_free(ctx2);
+    const char *randomHashAlg()
+    {
+        // Array of hash names (static so pointers remain valid)
+        static const char *hashes[] = {
+            "SHA1",
+            "SHA224",
+            "SHA256",
+            "SHA384",
+            "SHA512"};
+        static const size_t num_hashes = sizeof(hashes) / sizeof(hashes[0]);
 
-    if (ctx1)
-        EVP_MAC_CTX_free(ctx1);
+        static thread_local std::mt19937 rng(std::random_device{}());
+        std::uniform_int_distribution<size_t> dist(0, num_hashes - 1);
+        return hashes[dist(rng)];
+    }
 
-    if (mac_algo)
-        EVP_MAC_free(mac_algo);
+    void work()
+    {
+        while (running_)
+        {
+            crypto_key_id_t kid = 0x11;
+            const char *sha = sha_ ? sha_ : randomHashAlg();
+            std::vector<uint8_t> input(input_len_ ? input_len_ : std::rand() % 2056);
+            std::generate(input.begin(), input.end(), std::rand);
+            HMac defHmac("default");
+            auto defOut = defHmac.calc(input, key1_.data(), key1_.size(), sha);
+            auto provOut = provHmac_.calc(input, &kid, sizeof(kid), sha);
+            EXPECT_EQ(defOut, provOut);
+            size_t n = processed_calls_.fetch_add(1, std::memory_order_relaxed);
+            processed_len_.fetch_add(input.size(), std::memory_order_relaxed);
+            bool ok = defOut == provOut;
+            // LOG_INFO("t %u, n=%lu, %s, len=%lu", id, processed_calls.load(std::memory_order_relaxed), sha, input.size());
+            // LOG_INFO("t %u, n=%lu, %s, len=%lu", id, n, sha, input.size());
+        }
+    }
 
-    if (prov)
-        OSSL_PROVIDER_unload(prov);
+    void run(uint32_t n)
+    {
+        id_ = 0;
+        running_ = true;
+        for (uint32_t i = 0; i < n; i++)
+        {
+            threads_.push_back(std::thread(&MTTest::work, this));
+        }
+    }
 
-    if (lib_ctx)
-        OSSL_LIB_CTX_free(lib_ctx);
+    void stop()
+    {
+        running_ = false;
+        while (!threads_.empty())
+        {
+            auto &t = threads_.at(0);
+            if (t.joinable())
+            {
+                t.join();
+            }
+            threads_.erase(threads_.begin());
+        }
+        LOG_INFO("Processed %lu calls. %lu kb data", processed_calls_.load(std::memory_order_relaxed),
+                 processed_len_.load(std::memory_order_relaxed) / 1024);
+    }
+};
 
-    return 0;
-}
-
-int main(int argc, char *argv[])
+TEST(TestConcurrent, HMAC)
 {
     std::vector<uint8_t> input(512);
-    auto key = load_file("aes256_2.key");
-    crypto_key_id_t key_id = 0xaa;
+    auto key2 = load_file("aes256_2.key");
+    crypto_key_id_t key_id2 = 0x22;
 
-    uint32_t n = 1;
-
-    do_hmac("libcryptod_provider", input, &key_id, sizeof(key_id), "SHA512", n);
-    // do_hmac("default", input, key.data(), key.size(), "SHA512", n);
-    return 0;
+    MTTest t("SHA256", 1024);
+    t.run(10);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    t.stop();
 }

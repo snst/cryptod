@@ -70,7 +70,7 @@ static const OSSL_ALGORITHM *cdp_query(void *provctx, int operation_id, int *no_
 
 static void cdp_teardown(void *provctx)
 {
-    cc_disconnect(provctx);
+    // cc_disconnect(provctx);
 }
 
 /* Provider Dispatch Table */
@@ -85,10 +85,11 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
                        const OSSL_DISPATCH **out,
                        void **provctx)
 {
-    void *ret = (void *)cc_connect();
-    if (!ret)
-        return 0;
-    *provctx = ret;
+    //    void *ret = (void *)cc_connect();
+    //    if (!ret)
+    //        return 0;
+    //    *provctx = ret;
+    *provctx = (void *)handle;
     *out = provider_functions;
     return 1;
 }
