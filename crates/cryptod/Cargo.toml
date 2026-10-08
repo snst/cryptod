@@ -1,0 +1,34 @@
+[package]
+name = "cryptod"
+version = "0.1.0"
+edition = "2021"
+description = "Cryptographic daemon providing crypto services over Unix socket"
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "cryptod"
+path = "src/main.rs"
+
+[dependencies]
+crypto-api = { path = "../crypto-api" }
+crypto-native = { path = "../crypto-native" }
+
+# Async runtime
+tokio = { version = "1", features = ["full", "net"] }
+
+# Protobuf
+prost = "0.13"
+bytes = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Unix socket operations
+libc = "0.2"
+
+[build-dependencies]
+prost-build = "0.13"

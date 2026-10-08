@@ -1,0 +1,27 @@
+[package]
+name = "crypto-native"
+version = "0.1.0"
+edition = "2021"
+description = "Native Rust backend implementation for crypto-api"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+crypto-api = { path = "../crypto-api" }
+
+# Hash algorithms
+sha2 = "0.10"
+
+# HMAC
+hmac = "0.12"
+
+# AES cipher
+aes = "0.8"
+
+# CBC mode
+cbc = { version = "0.1", features = ["std"] }
+
+# Random number generation
+getrandom = "0.2"
+
+[dev-dependencies]
+hex = "0.4"

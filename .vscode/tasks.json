@@ -2,18 +2,71 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "cmake",
-			"label": "CMake: build",
+			"type": "cargo",
 			"command": "build",
-			"targets": [
-				"all"
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "rust: cargo build"
+		},
+		{
+			"label": "cpp: cmake configure",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"-DCMAKE_BUILD_TYPE=Debug",
+				".."
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/client/build"
+			},
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "cpp: build library and tests",
+			"type": "shell",
+			"command": "make",
+			"args": [
+				"-j4"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/client/build"
+			},
+			"problemMatcher": [
+				"$gcc"
 			],
 			"group": {
 				"kind": "build",
-				"isDefault": true
+				"isDefault": false
 			},
-			"problemMatcher": ["$gcc"],
-			"detail": "CMake template build task"
+			"dependsOn": "cpp: cmake configure"
+		},
+		{
+			"label": "cpp: run tests",
+			"type": "shell",
+			"command": "./cryptod_client_tests",
+			"options": {
+				"cwd": "${workspaceFolder}/client/build"
+			},
+			"problemMatcher": [],
+			"group": "test",
+			"dependsOn": "cpp: build library and tests"
+		},
+		{
+			"label": "cpp: run kdf tests",
+			"type": "shell",
+			"command": "./cryptod_client_tests",
+			"args": [
+				"--gtest_filter=*Kdf*"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/client/build"
+			},
+			"problemMatcher": [],
+			"group": "test",
+			"dependsOn": "cpp: build library and tests"
 		}
 	]
 }

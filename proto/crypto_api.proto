@@ -1,0 +1,697 @@
+// crypto_api.proto
+//
+// Protocol Buffers definition for the cryptographic API.
+// Designed for communication over Unix domain sockets.
+//
+// Usage pattern:
+//   Client sends CryptoRequest -> Server responds with CryptoResponse
+//
+// All streaming operations use context handles:
+//   1. Create context (returns handle)
+//   2. Update with data (using handle)
+//   3. Finish/finalize (using handle)
+
+syntax = "proto3";
+
+package crypto;
+
+option optimize_for = SPEED;
+
+// ============================================================
+// Top-level Request/Response Envelope
+// ============================================================
+
+// Wrapper message for all requests sent to the crypto daemon.
+message CryptoRequest {
+  // Unique request ID for correlation with responses.
+  uint64 request_id = 1;
+  
+  oneof request {
+    // Provider queries
+    GetProviderInfoRequest get_provider_info = 10;
+    GetCapabilitiesRequest get_capabilities = 11;
+    
+    // Key management
+    CreateKeyRequest create_key = 20;
+    ImportKeyRequest import_key = 21;
+    ExportKeyRequest export_key = 22;
+    DeleteKeyRequest delete_key = 23;
+    GetKeyInfoRequest get_key_info = 24;
+    FindKeyRequest find_key = 25;
+    WrapKeyRequest wrap_key = 26;
+    UnwrapKeyRequest unwrap_key = 27;
+    
+    // Hash operations
+    HashCreateRequest hash_create = 30;
+    HashUpdateRequest hash_update = 31;
+    HashFinishRequest hash_finish = 32;
+    
+    // MAC operations
+    MacCreateRequest mac_create = 40;
+    MacUpdateRequest mac_update = 41;
+    MacFinishRequest mac_finish = 42;
+    MacVerifyRequest mac_verify = 43;
+    
+    // Cipher operations
+    CipherCreateRequest cipher_create = 50;
+    CipherUpdateRequest cipher_update = 51;
+    CipherFinishRequest cipher_finish = 52;
+    CipherSetTagRequest cipher_set_tag = 53;
+    
+    // Signature operations
+    SignCreateRequest sign_create = 60;
+    SignUpdateRequest sign_update = 61;
+    SignFinishRequest sign_finish = 62;
+    VerifyCreateRequest verify_create = 64;
+    VerifyUpdateRequest verify_update = 65;
+    VerifyFinishRequest verify_finish = 66;
+    
+    // Key agreement
+    KeyAgreementRequest key_agreement = 70;
+    
+    // Key derivation
+    DeriveKeyRequest derive_key = 80;
+    
+    // Random generation
+    GenerateRandomRequest generate_random = 90;
+    
+    // Context management
+    DestroyContextRequest destroy_context = 100;
+  }
+}
+
+// Wrapper message for all responses from the crypto daemon.
+message CryptoResponse {
+  // Correlation ID matching the request.
+  uint64 request_id = 1;
+  
+  // Error information (empty if success).
+  CryptoError error = 2;
+  
+  oneof response {
+    // Provider queries
+    GetProviderInfoResponse get_provider_info = 10;
+    GetCapabilitiesResponse get_capabilities = 11;
+    
+    // Key management
+    CreateKeyResponse create_key = 20;
+    ImportKeyResponse import_key = 21;
+    ExportKeyResponse export_key = 22;
+    DeleteKeyResponse delete_key = 23;
+    GetKeyInfoResponse get_key_info = 24;
+    FindKeyResponse find_key = 25;
+    WrapKeyResponse wrap_key = 26;
+    UnwrapKeyResponse unwrap_key = 27;
+    
+    // Hash operations
+    HashCreateResponse hash_create = 30;
+    HashUpdateResponse hash_update = 31;
+    HashFinishResponse hash_finish = 32;
+    
+    // MAC operations
+    MacCreateResponse mac_create = 40;
+    MacUpdateResponse mac_update = 41;
+    MacFinishResponse mac_finish = 42;
+    MacVerifyResponse mac_verify = 43;
+    
+    // Cipher operations
+    CipherCreateResponse cipher_create = 50;
+    CipherUpdateResponse cipher_update = 51;
+    CipherFinishResponse cipher_finish = 52;
+    CipherSetTagResponse cipher_set_tag = 53;
+    
+    // Signature operations
+    SignCreateResponse sign_create = 60;
+    SignUpdateResponse sign_update = 61;
+    SignFinishResponse sign_finish = 62;
+    VerifyCreateResponse verify_create = 64;
+    VerifyUpdateResponse verify_update = 65;
+    VerifyFinishResponse verify_finish = 66;
+    
+    // Key agreement
+    KeyAgreementResponse key_agreement = 70;
+    
+    // Key derivation
+    DeriveKeyResponse derive_key = 80;
+    
+    // Random generation
+    GenerateRandomResponse generate_random = 90;
+    
+    // Context management
+    DestroyContextResponse destroy_context = 100;
+  }
+}
+
+// ============================================================
+// Error Model
+// ============================================================
+
+message CryptoError {
+  ErrorCode code = 1;
+  string message = 2;
+}
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_OK = 1;
+  ERROR_CODE_INVALID_KEY = 2;
+  ERROR_CODE_INVALID_ALGORITHM = 3;
+  ERROR_CODE_INVALID_STATE = 4;
+  ERROR_CODE_INVALID_INPUT = 5;
+  ERROR_CODE_INVALID_NONCE = 6;
+  ERROR_CODE_TAG_MISMATCH = 7;
+  ERROR_CODE_DATA_TOO_LARGE = 8;
+  ERROR_CODE_AUTHENTICATION_FAILED = 9;
+  ERROR_CODE_UNSUPPORTED = 10;
+  ERROR_CODE_BACKEND_ERROR = 11;
+  ERROR_CODE_ENTROPY_UNAVAILABLE = 12;
+  ERROR_CODE_BUFFER_TOO_SMALL = 13;
+  ERROR_CODE_KEY_NOT_FOUND = 14;
+  ERROR_CODE_KEY_EXPIRED = 15;
+  ERROR_CODE_USAGE_NOT_PERMITTED = 16;
+  ERROR_CODE_DEVICE_ERROR = 17;
+  ERROR_CODE_TIMEOUT = 18;
+  ERROR_CODE_CONTEXT_NOT_FOUND = 19;
+}
+
+// ============================================================
+// Provider Information
+// ============================================================
+
+message GetProviderInfoRequest {}
+
+message GetProviderInfoResponse {
+  string name = 1;
+  string version = 2;
+}
+
+message GetCapabilitiesRequest {}
+
+message GetCapabilitiesResponse {
+  repeated KeyAlgorithm key_algorithms = 1;
+  repeated HashAlgorithm hash_algorithms = 2;
+  repeated CipherMode cipher_modes = 3;
+  repeated SignatureAlgorithm signature_algorithms = 4;
+}
+
+// ============================================================
+// Algorithm Definitions
+// ============================================================
+
+enum HashAlgorithm {
+  HASH_ALGORITHM_UNSPECIFIED = 0;
+  HASH_ALGORITHM_RAW = 1;           // Pre-hashed data (for HMAC with external hash)
+  HASH_ALGORITHM_SHA1 = 2;
+  HASH_ALGORITHM_SHA224 = 3;
+  HASH_ALGORITHM_SHA256 = 4;
+  HASH_ALGORITHM_SHA384 = 5;
+  HASH_ALGORITHM_SHA512 = 6;
+  HASH_ALGORITHM_SHA512_256 = 7;
+  HASH_ALGORITHM_SHA3_224 = 8;
+  HASH_ALGORITHM_SHA3_256 = 9;
+  HASH_ALGORITHM_SHA3_384 = 10;
+  HASH_ALGORITHM_SHA3_512 = 11;
+}
+
+enum CipherMode {
+  CIPHER_MODE_UNSPECIFIED = 0;
+  CIPHER_MODE_ECB = 1;
+  CIPHER_MODE_CBC = 2;
+  CIPHER_MODE_CTR = 3;
+  CIPHER_MODE_CFB = 4;
+  CIPHER_MODE_OFB = 5;
+  CIPHER_MODE_GCM = 6;
+  CIPHER_MODE_CCM = 7;
+}
+
+enum SymmetricKeySize {
+  SYMMETRIC_KEY_SIZE_UNSPECIFIED = 0;
+  SYMMETRIC_KEY_SIZE_128 = 1;
+  SYMMETRIC_KEY_SIZE_192 = 2;
+  SYMMETRIC_KEY_SIZE_256 = 3;
+  SYMMETRIC_KEY_SIZE_384 = 4;
+  SYMMETRIC_KEY_SIZE_512 = 5;
+}
+
+enum EcCurve {
+  EC_CURVE_UNSPECIFIED = 0;
+  EC_CURVE_P256 = 1;
+  EC_CURVE_P384 = 2;
+  EC_CURVE_P521 = 3;
+  EC_CURVE_SECP256K1 = 4;
+}
+
+// Key algorithm - mirrors Rust KeyAlgorithm enum
+message KeyAlgorithm {
+  oneof algorithm {
+    bool symmetric = 1;              // Generic symmetric key
+    SymmetricKeySize aes = 2;        // AES with specific key size
+    HashAlgorithm hmac = 3;          // HMAC with hash algorithm
+    bool cmac = 4;                   // CMAC
+    uint32 rsa_bits = 5;             // RSA with bit size
+    EcCurve ec = 6;                  // Elliptic curve
+    bool x25519 = 7;                 // X25519 key agreement
+    bool ed25519 = 8;                // Ed25519 signing
+    bool x448 = 9;                   // X448 key agreement
+    bool ed448 = 10;                 // Ed448 signing
+  }
+}
+
+enum MacAlgorithm {
+  MAC_ALGORITHM_UNSPECIFIED = 0;
+  MAC_ALGORITHM_HMAC_SHA1 = 1;
+  MAC_ALGORITHM_HMAC_SHA224 = 2;
+  MAC_ALGORITHM_HMAC_SHA256 = 3;
+  MAC_ALGORITHM_HMAC_SHA384 = 4;
+  MAC_ALGORITHM_HMAC_SHA512 = 5;
+  MAC_ALGORITHM_HMAC_SHA3_256 = 6;
+  MAC_ALGORITHM_HMAC_SHA3_384 = 7;
+  MAC_ALGORITHM_HMAC_SHA3_512 = 8;
+  MAC_ALGORITHM_CMAC = 9;
+}
+
+message SignatureAlgorithm {
+  oneof algorithm {
+    RsaPkcs1v15Params rsa_pkcs1v15 = 1;
+    RsaPssParams rsa_pss = 2;
+    EcdsaParams ecdsa = 3;
+    bool ed25519 = 4;
+    bool ed448 = 5;
+  }
+}
+
+message RsaPkcs1v15Params {
+  HashAlgorithm hash = 1;
+}
+
+message RsaPssParams {
+  HashAlgorithm hash = 1;
+  RsaPssSaltLen salt_len = 2;
+}
+
+message RsaPssSaltLen {
+  oneof salt_len {
+    bool hash_len = 1;    // Salt length equals hash output length
+    bool max = 2;         // Maximum possible salt length
+    uint32 bytes = 3;     // Specific byte length
+  }
+}
+
+message EcdsaParams {
+  HashAlgorithm hash = 1;
+}
+
+enum KeyAgreementAlgorithm {
+  KEY_AGREEMENT_ALGORITHM_UNSPECIFIED = 0;
+  KEY_AGREEMENT_ALGORITHM_ECDH = 1;
+  KEY_AGREEMENT_ALGORITHM_X25519 = 2;
+  KEY_AGREEMENT_ALGORITHM_X448 = 3;
+}
+
+enum KdfAlgorithm {
+  KDF_ALGORITHM_UNSPECIFIED = 0;
+  KDF_ALGORITHM_HKDF_SHA256 = 1;
+  KDF_ALGORITHM_HKDF_SHA384 = 2;
+  KDF_ALGORITHM_HKDF_SHA512 = 3;
+  KDF_ALGORITHM_PBKDF2_SHA256 = 4;
+  KDF_ALGORITHM_PBKDF2_SHA384 = 5;
+  KDF_ALGORITHM_PBKDF2_SHA512 = 6;
+  // TLS 1.2 PRF (RFC 5246)
+  KDF_ALGORITHM_TLS12_EMS_PRF_SHA256 = 7;
+  KDF_ALGORITHM_TLS12_EMS_PRF_SHA384 = 8;
+}
+
+enum KeyWrapAlgorithm {
+  KEY_WRAP_ALGORITHM_UNSPECIFIED = 0;
+  KEY_WRAP_ALGORITHM_AES_KW = 1;      // RFC 3394
+  KEY_WRAP_ALGORITHM_AES_KWP = 2;     // RFC 5649
+  KEY_WRAP_ALGORITHM_AES_GCM = 3;
+}
+
+enum KeyFormat {
+  KEY_FORMAT_UNSPECIFIED = 0;
+  KEY_FORMAT_RAW = 1;
+  KEY_FORMAT_PEM = 2;
+  KEY_FORMAT_DER = 3;
+  KEY_FORMAT_PKCS8 = 4;
+  KEY_FORMAT_PUBLIC_KEY_ONLY = 5;
+}
+
+// ============================================================
+// Key Management Types
+// ============================================================
+  
+// Opaque key handle - always a numeric ID.
+// To find a key by label, use FindKeyRequest.
+// Note: id = 0 is reserved as INVALID_KEY_ID.
+message KeyHandle {
+  uint64 id = 1;
+}
+
+// Key usage flags (bitmask)
+message KeyUsage {
+  bool encrypt = 1;
+  bool decrypt = 2;
+  bool sign = 3;
+  bool verify = 4;
+  bool derive = 5;
+  bool wrap = 6;
+  bool unwrap = 7;
+}
+
+enum KeyBackendKind {
+  KEY_BACKEND_KIND_UNSPECIFIED = 0;
+  KEY_BACKEND_KIND_SOFTWARE = 1;
+  KEY_BACKEND_KIND_HSM = 2;
+  KEY_BACKEND_KIND_TPM = 3;
+  KEY_BACKEND_KIND_PKCS11 = 4;
+  KEY_BACKEND_KIND_SECURE_ELEMENT = 5;
+  KEY_BACKEND_KIND_OPAQUE_HANDLE = 6;
+}
+
+message KeyInfo {
+  KeyHandle handle = 1;
+  KeyAlgorithm algorithm = 2;
+  KeyUsage usage = 3;
+  bool extractable = 4;
+  KeyBackendKind backend = 5;
+  optional uint32 size_bits = 6;
+  string label = 7;
+}
+
+// ============================================================
+// Key Management Operations
+// ============================================================
+
+message CreateKeyRequest {
+  string label = 1;
+  KeyAlgorithm algorithm = 2;
+  KeyUsage usage = 3;
+  bool extractable = 4;
+  optional uint32 size_bits = 5;
+}
+
+message CreateKeyResponse {
+  KeyHandle handle = 1;
+}
+
+message ImportKeyRequest {
+  string label = 1;
+  KeyAlgorithm algorithm = 2;
+  KeyFormat format = 3;
+  bytes material = 4;
+  KeyUsage usage = 5;
+  bool extractable = 6;
+}
+
+message ImportKeyResponse {
+  KeyHandle handle = 1;
+}
+
+message ExportKeyRequest {
+  KeyHandle handle = 1;
+  KeyFormat format = 2;
+}
+
+message ExportKeyResponse {
+  bytes material = 1;
+}
+
+message DeleteKeyRequest {
+  KeyHandle handle = 1;
+}
+
+message DeleteKeyResponse {}
+
+message GetKeyInfoRequest {
+  KeyHandle handle = 1;
+}
+
+message GetKeyInfoResponse {
+  KeyInfo info = 1;
+}
+
+message KeyQuery {
+  string label = 1;
+}
+
+message FindKeyRequest {
+  KeyQuery query = 1;
+}
+
+message FindKeyResponse {
+  optional KeyHandle handle = 1;  // None if not found
+}
+
+message UnwrapKeySpec {
+  KeyAlgorithm algorithm = 1;
+  KeyUsage usage = 2;
+  bool extractable = 3;
+}
+
+message WrapKeyRequest {
+  KeyHandle key_to_wrap = 1;
+  KeyHandle wrapping_key = 2;
+  KeyWrapAlgorithm algorithm = 3;
+  optional bytes iv = 4;
+}
+
+message WrapKeyResponse {
+  bytes wrapped_key = 1;
+}
+
+message UnwrapKeyRequest {
+  bytes wrapped_key = 1;
+  KeyHandle unwrapping_key = 2;
+  KeyWrapAlgorithm algorithm = 3;
+  optional bytes iv = 4;
+  UnwrapKeySpec key_spec = 5;
+}
+
+message UnwrapKeyResponse {
+  KeyHandle handle = 1;
+}
+
+// ============================================================
+// Hash Operations
+// ============================================================
+
+message HashCreateRequest {
+  HashAlgorithm algorithm = 1;
+}
+
+message HashCreateResponse {
+  uint64 context_handle = 1;
+  uint32 output_size = 2;
+}
+
+message HashUpdateRequest {
+  uint64 context_handle = 1;
+  bytes data = 2;
+}
+
+message HashUpdateResponse {}
+
+message HashFinishRequest {
+  uint64 context_handle = 1;
+}
+
+message HashFinishResponse {
+  bytes digest = 1;
+}
+
+// ============================================================
+// MAC Operations
+// ============================================================
+
+message MacCreateRequest {
+  MacAlgorithm algorithm = 1;
+  KeyHandle key = 2;
+}
+
+message MacCreateResponse {
+  uint64 context_handle = 1;
+  uint32 output_size = 2;
+}
+
+message MacUpdateRequest {
+  uint64 context_handle = 1;
+  bytes data = 2;
+}
+
+message MacUpdateResponse {}
+
+message MacFinishRequest {
+  uint64 context_handle = 1;
+}
+
+message MacFinishResponse {
+  bytes tag = 1;
+}
+
+message MacVerifyRequest {
+  uint64 context_handle = 1;
+  bytes expected_tag = 2;
+}
+
+message MacVerifyResponse {
+  bool valid = 1;
+}
+
+// ============================================================
+// Cipher Operations
+// ============================================================
+
+message CipherParams {
+  CipherMode mode = 1;
+  optional bytes iv = 2;
+  optional bytes aad = 3;        // For AEAD modes
+  optional uint32 tag_len = 4;   // For AEAD modes, defaults to 16
+}
+
+message CipherCreateRequest {
+  CipherParams params = 1;
+  KeyHandle key = 2;
+  bool encrypt = 3;  // true = encrypt, false = decrypt
+}
+
+message CipherCreateResponse {
+  uint64 context_handle = 1;
+  bool is_aead = 2;
+}
+
+message CipherUpdateRequest {
+  uint64 context_handle = 1;
+  bytes input = 2;
+}
+
+message CipherUpdateResponse {
+  bytes output = 1;
+}
+
+message CipherSetTagRequest {
+  uint64 context_handle = 1;
+  bytes tag = 2;
+}
+
+message CipherSetTagResponse {}
+
+message CipherFinishRequest {
+  uint64 context_handle = 1;
+}
+
+message CipherFinishResponse {
+  bytes output = 1;
+  optional bytes tag = 2;  // Only for AEAD encryption
+}
+
+// ============================================================
+// Signature Operations
+// ============================================================
+
+message SignatureParams {
+  SignatureAlgorithm algorithm = 1;
+}
+
+message SignCreateRequest {
+  SignatureParams params = 1;
+  KeyHandle key = 2;
+}
+
+message SignCreateResponse {
+  uint64 context_handle = 1;
+}
+
+message SignUpdateRequest {
+  uint64 context_handle = 1;
+  bytes data = 2;
+}
+
+message SignUpdateResponse {}
+
+message SignFinishRequest {
+  uint64 context_handle = 1;
+}
+
+message SignFinishResponse {
+  bytes signature = 1;
+}
+
+message VerifyCreateRequest {
+  SignatureParams params = 1;
+  KeyHandle key = 2;
+}
+
+message VerifyCreateResponse {
+  uint64 context_handle = 1;
+}
+
+message VerifyUpdateRequest {
+  uint64 context_handle = 1;
+  bytes data = 2;
+}
+
+message VerifyUpdateResponse {}
+
+message VerifyFinishRequest {
+  uint64 context_handle = 1;
+  bytes signature = 2;
+}
+
+message VerifyFinishResponse {
+  bool valid = 1;
+}
+
+// ============================================================
+// Key Agreement Operations
+// ============================================================
+
+message KeyAgreementRequest {
+  KeyAgreementAlgorithm algorithm = 1;
+  KeyHandle private_key = 2;
+  bytes peer_public_key = 3;
+}
+
+message KeyAgreementResponse {
+  bytes shared_secret = 1;
+}
+
+// ============================================================
+// Key Derivation Operations
+// ============================================================
+
+message DeriveKeyRequest {
+  KdfAlgorithm algorithm = 1;
+  KeyHandle key = 2;
+  optional bytes salt = 3;
+  optional bytes info = 4;         // For HKDF, or seed for TLS PRF
+  uint32 output_len = 5;
+  optional uint32 iterations = 6;  // For PBKDF2
+}
+
+message DeriveKeyResponse {
+  bytes derived_key = 1;
+}
+
+// ============================================================
+// Random Generation
+// ============================================================
+
+message GenerateRandomRequest {
+  uint32 length = 1;
+}
+
+message GenerateRandomResponse {
+  bytes data = 1;
+}
+
+// ============================================================
+// Context Management
+// ============================================================
+
+// Destroy a streaming context without finalizing (for cleanup/abort)
+message DestroyContextRequest {
+  uint64 context_handle = 1;
+}
+
+message DestroyContextResponse {}

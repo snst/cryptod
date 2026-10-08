@@ -1,0 +1,53 @@
+{
+    "testMate.cpp.discovery.gracePeriodForMissing": 10,
+    "testMate.cpp.debug.configTemplate": {
+        "type": "gdb",
+        "request": "launch",
+        "target": "${exec}",
+        "arguments": "${argsStr}",
+        "cwd": "${workspaceFolder}/client/build/test",
+        "gdbpath": "/usr/bin/gdb",
+        "valuesFormatting": "parseText",
+        "env": {
+            "LD_LIBRARY_PATH": "${workspaceFolder}/openssl",
+            "OPENSSL_MODULES": "${workspaceFolder}/client/build/ossl_provider"
+        }
+
+    },
+    "testMate.cpp.test.advancedExecutables": [
+    {
+        "pattern": "${workspaceFolder}/**/{build,Build,BUILD,out,Out,OUT}/{test,Test,TEST}/*_tests",
+        "cwd": "${workspaceFolder}/client/build/test",
+        "env": {
+            "LD_LIBRARY_PATH": "${workspaceFolder}/openssl",
+            "OPENSSL_MODULES": "${workspaceFolder}/client/build/ossl_provider"
+            }
+    }
+    ],
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "googletest.failed",
+                "settings": {
+                    "foreground": "#f00"
+                }
+            },
+            {
+                "scope": "googletest.passed",
+                "settings": {
+                    "foreground": "#0f0"
+                }
+            },
+            {
+                "scope": "googletest.run",
+                "settings": {
+                    "foreground": "#0f0"
+                }
+            }
+        ]
+    },
+    "gtest-adapter.debugConfig": [
+        "Debug GTest"
+    ],
+    "gtest-adapter.supportLocation": true
+}

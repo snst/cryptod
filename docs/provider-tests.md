@@ -1,0 +1,2 @@
+- OpenSSL provider tests need cryptod running on /tmp/cryptod.sock.
+- When running client/build/test/cryptod_client_tests manually, set OPENSSL_MODULES=/workspaces/cryptod/client/build/ossl_provider so OSSL_PROVIDER_load("libcryptod_provider") finds the built module.

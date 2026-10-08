@@ -1,0 +1,181 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Stefan Schmidt
+
+#include "cryptod_provider.h"
+
+#include <openssl/core_dispatch.h>
+#include <openssl/core_names.h>
+#include <openssl/params.h>
+#include <cstring>
+
+extern "C" {
+
+static OSSL_FUNC_signature_newctx_fn cdp_hmac_sig_newctx;
+static OSSL_FUNC_signature_freectx_fn cdp_hmac_sig_freectx;
+static OSSL_FUNC_signature_dupctx_fn cdp_hmac_sig_dupctx;
+static OSSL_FUNC_signature_query_key_types_fn cdp_hmac_sig_query_key_types;
+static OSSL_FUNC_signature_digest_sign_init_fn cdp_hmac_sig_digest_sign_init;
+static OSSL_FUNC_signature_digest_sign_update_fn cdp_hmac_sig_digest_sign_update;
+static OSSL_FUNC_signature_digest_sign_final_fn cdp_hmac_sig_digest_sign_final;
+
+struct CryptodHmacSignatureContext {
+  CryptodProviderContext *provider_;
+  std::string key_label_;
+  cryptod::KeyHandle key_handle_;
+  cryptod::MacAlgorithm mac_alg_;
+  std::vector<unsigned char> buffered_data_;
+};
+
+static bool safe_strncmp_sig(const char *s1, size_t len1, const char *s2) {
+  size_t len2 = strlen(s2);
+  if (len1 != len2)
+    return false;
+  return strncmp(s1, s2, len1) == 0;
+}
+
+static cryptod::MacAlgorithm digest_name_to_mac_alg(const char *val,
+                                                    size_t len) {
+  if (val == NULL || len == 0) {
+    return cryptod::MacAlgorithm::HmacSha256;
+  }
+  if (safe_strncmp_sig(val, len, "SHA1"))
+    return cryptod::MacAlgorithm::HmacSha1;
+  if (safe_strncmp_sig(val, len, "SHA224"))
+    return cryptod::MacAlgorithm::HmacSha224;
+  if (safe_strncmp_sig(val, len, "SHA256"))
+    return cryptod::MacAlgorithm::HmacSha256;
+  if (safe_strncmp_sig(val, len, "SHA384"))
+    return cryptod::MacAlgorithm::HmacSha384;
+  if (safe_strncmp_sig(val, len, "SHA512"))
+    return cryptod::MacAlgorithm::HmacSha512;
+  return cryptod::MacAlgorithm::HmacSha256;
+}
+
+static size_t mac_alg_output_size(cryptod::MacAlgorithm alg) {
+  switch (alg) {
+  case cryptod::MacAlgorithm::HmacSha1:
+    return 20;
+  case cryptod::MacAlgorithm::HmacSha224:
+    return 28;
+  case cryptod::MacAlgorithm::HmacSha256:
+    return 32;
+  case cryptod::MacAlgorithm::HmacSha384:
+    return 48;
+  case cryptod::MacAlgorithm::HmacSha512:
+    return 64;
+  default:
+    return 32;
+  }
+}
+
+static void *cdp_hmac_sig_newctx(void *provctx, const char *propq) {
+  (void)propq;
+  auto *ctx = new CryptodHmacSignatureContext();
+  ctx->provider_ = PROV_CTX(provctx);
+  ctx->mac_alg_ = cryptod::MacAlgorithm::HmacSha256;
+  return ctx;
+}
+
+static void cdp_hmac_sig_freectx(void *vctx) {
+  delete static_cast<CryptodHmacSignatureContext *>(vctx);
+}
+
+static void *cdp_hmac_sig_dupctx(void *vctx) {
+  auto *source = static_cast<CryptodHmacSignatureContext *>(vctx);
+  if (source == NULL) {
+    return NULL;
+  }
+
+  auto *copy = new CryptodHmacSignatureContext(*source);
+  return copy;
+}
+
+static const char **cdp_hmac_sig_query_key_types(void) {
+  static const char *key_types[] = {CRYPTOD_SYM_KEY_TYPE, NULL};
+  return key_types;
+}
+
+static int cdp_hmac_sig_digest_sign_init(void *vctx, const char *mdname,
+                                         void *provkey,
+                                         const OSSL_PARAM params[]) {
+  (void)params;
+
+  auto *ctx = static_cast<CryptodHmacSignatureContext *>(vctx);
+  auto *key = static_cast<CryptodProviderKey *>(provkey);
+  if (ctx == NULL || key == NULL) { //} || key->key_label_.empty()) {
+    return OSSL_ERR;
+  }
+
+  //ctx->key_label_ = key->key_label_;
+  ctx->key_handle_ = key->key_handle_;
+  ctx->mac_alg_ = digest_name_to_mac_alg(mdname, mdname != NULL ? strlen(mdname) : 0);
+  ctx->buffered_data_.clear();
+  return OSSL_OK;
+}
+
+static int cdp_hmac_sig_digest_sign_update(void *vctx, const unsigned char *data,
+                                           size_t datalen) {
+  auto *ctx = static_cast<CryptodHmacSignatureContext *>(vctx);
+  if (ctx == NULL) {
+    return OSSL_ERR;
+  }
+
+  ctx->buffered_data_.insert(ctx->buffered_data_.end(), data, data + datalen);
+  return OSSL_OK;
+}
+
+static int cdp_hmac_sig_digest_sign_final(void *vctx, unsigned char *sig,
+                                          size_t *siglen, size_t sigsize) {
+  auto *ctx = static_cast<CryptodHmacSignatureContext *>(vctx);
+  if (ctx == NULL || siglen == NULL) { //  || ctx->key_label_.empty()) {
+    return OSSL_ERR;
+  }
+
+  const size_t expected_len = mac_alg_output_size(ctx->mac_alg_);
+  if (sig == NULL) {
+    *siglen = expected_len;
+    return OSSL_OK;
+  }
+  if (sigsize < expected_len) {
+    return OSSL_ERR;
+  }
+
+  ctx->provider_->connect();
+  if (!ctx->provider_->client_) {
+    return OSSL_ERR;
+  }
+
+  auto mac = ctx->provider_->client_->mac(ctx->mac_alg_, ctx->key_handle_);
+  if (!mac) {
+    return OSSL_ERR;
+  }
+
+  if (!ctx->buffered_data_.empty()) {
+    mac->update(ctx->buffered_data_.data(), ctx->buffered_data_.size());
+  }
+
+  auto tag = mac->finish();
+  if (sigsize < tag.size()) {
+    return OSSL_ERR;
+  }
+
+  memcpy(sig, tag.data(), tag.size());
+  *siglen = tag.size();
+  return OSSL_OK;
+}
+
+extern const OSSL_DISPATCH cdp_hmac_signature_functions[] = {
+    {OSSL_FUNC_SIGNATURE_NEWCTX, (void (*)(void))cdp_hmac_sig_newctx},
+    {OSSL_FUNC_SIGNATURE_FREECTX, (void (*)(void))cdp_hmac_sig_freectx},
+    {OSSL_FUNC_SIGNATURE_DUPCTX, (void (*)(void))cdp_hmac_sig_dupctx},
+    {OSSL_FUNC_SIGNATURE_QUERY_KEY_TYPES,
+     (void (*)(void))cdp_hmac_sig_query_key_types},
+    {OSSL_FUNC_SIGNATURE_DIGEST_SIGN_INIT,
+     (void (*)(void))cdp_hmac_sig_digest_sign_init},
+    {OSSL_FUNC_SIGNATURE_DIGEST_SIGN_UPDATE,
+     (void (*)(void))cdp_hmac_sig_digest_sign_update},
+    {OSSL_FUNC_SIGNATURE_DIGEST_SIGN_FINAL,
+     (void (*)(void))cdp_hmac_sig_digest_sign_final},
+    {0, NULL}};
+
+} // extern "C"

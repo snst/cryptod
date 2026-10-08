@@ -1,156 +1,61 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) hmac openssl prov",
-            "type": "cppdbg",
+            "name": "Debug executable 'cryptod'",
+            "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/openssl/apps/openssl",
-            "args": ["mac", "-provider", "libcryptod_provider", "-macopt", "key:[0x11]", "-digest", "SHA1", "-in", "input3.txt", "HMAC"],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/data",
-            "environment": [ { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/openssl" },
-                             { "name": "OPENSSL_MODULES", "value": "${workspaceFolder}/build/cryptod_ossl_provider" } ],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
+            "cargo": {
+                "args": [
+                    "run",
+                    "--bin=cryptod",
+                    "--package=cryptod"
+                ]
+            },
+            "args": []
+        },
+        
+        {
+            "name": "Debug GTest",
+            "type": "gdb",
+            "request": "launch",
+            "target": "${workspaceFolder}/client/build/test/cryptod_client_tests",
+            "cwd": "${workspaceFolder}/client/build/test",
+            "arguments": "--gtest_filter=OsslMacTest.HmacSha256KnownVector",
+            "gdbpath": "/usr/bin/gdb",
+            "valuesFormatting": "parseText",
+            "autorun": [
+                "set env LD_LIBRARY_PATH /workspaces/cryptod/openssl",
+                "set env OPENSSL_MODULES /workspaces/cryptod/client/build/ossl_provider"
             ]
         },
         {
-            "name": "(gdb) cryptod",
-            "type": "cppdbg",
+            "name": "TLS-PSK Client",
+            "type": "gdb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/crypto_daemon/cryptod",
-            "args": ["-c", "cryptod.ini"],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/data",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
+            "target": "${workspaceFolder}/openssl/apps/openssl",
+            "cwd": "${workspaceFolder}/client/build/test",
+            "arguments": "s_client -tls1_2 -psk 41424344 -psk_identity Client_identity -cipher PSK-AES256-CBC-SHA -connect localhost:4433 -provider-path /workspaces/cryptod/client/build/ossl_provider/ -provider libcryptod_provider -provider default -propquery '?provider=libcryptod_provider' -debug -msg",
+            "gdbpath": "/usr/bin/gdb",
+            "valuesFormatting": "parseText",
+            "autorun": [
+                "set env LD_LIBRARY_PATH /workspaces/cryptod/openssl",
+                "set env OPENSSL_MODULES /workspaces/cryptod/client/build/ossl_provider"
             ]
         },
         {
-            "name": "(gdb) keystore",
-            "type": "cppdbg",
+            "name": "Debug openssl cli mac",
+            "type": "gdb",
             "request": "launch",
-            "program": "${workspaceFolder}/build/keystore_cli/keystore_cli",
-            "args": ["-c", "cryptod.ini", "-a", "-k", "0xaa", "-i", "aes256_2.key"],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/data",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
+            "target": "${workspaceFolder}/openssl/apps/openssl",
+            "cwd": "${workspaceFolder}/client/test",
+            "arguments": "mac -provider libcryptod_provider -digest SHA256 -macopt \"key_label:key123\" HMAC < data.txt",
+            "gdbpath": "/usr/bin/gdb",
+            "valuesFormatting": "parseText",
+            "autorun": [
+                "set env LD_LIBRARY_PATH /workspaces/cryptod/openssl",
+                "set env OPENSSL_MODULES /workspaces/cryptod/client/build/ossl_provider"
             ]
-        },
-        {
-            "name": "(gdb) test_ossl_backend",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/tests/test_ossl_backend",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/data",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) benchmark",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/test/benchmark/hmac_benchmark",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/data",
-            "environment": [ { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/openssl" },
-                             { "name": "OPENSSL_MODULES", "value": "${workspaceFolder}/build/cryptod_ossl_provider" } ],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) test_hmac_concurrent",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/tests/test_hmac_concurrent",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/data",
-            "environment": [ { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/openssl" },
-                             { "name": "OPENSSL_MODULES", "value": "${workspaceFolder}/build/cryptod_ossl_provider" } ],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ]
-        }
-
+        }        
     ]
 }
